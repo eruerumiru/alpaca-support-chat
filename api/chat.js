@@ -1,55 +1,90 @@
 // api/chat.js
-// 【診断用】あなたのキーで使えるモデル一覧を表示するコード
+// Gemini 2.0 Flashモデルを使用（最新・高速！）
 
-export const config = {
-  runtime: 'edge',
-};
+module.exports = async (req, res) => {
+  // CORS設定（ブラウザからのアクセスを許可）
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-export default async function handler(req) {
-  // CORS設定
+  // プレフライトリクエストへの応答
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
+    res.status(200).end();
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method Not Allowed' });
+    return;
   }
 
   try {
-    // Vercelの設定か、直書きのキーを取得
-    // ★もし直書きする場合は、下の "ここにキー" の部分に入れてください
-    const apiKey = process.env.GEMINI_API_KEY || "AIzaSyAAE0EQZcM0aa2qJy5TmBAkqW5Wx21aYZ8"; 
-
-    if (!apiKey || apiKey === "ここに直書きしたキー") {
-      throw new Error("APIキーが見つかりません。コード内の 'ここに直書きしたキー' の部分にキーを貼ってください。");
+    // ★ここに診断で成功したAPIキーを貼り付けてください！（""で囲む）
+    const apiKey = "AIzaSyAAE0EQZcM0aa2qJy5TmBAkqW5Wx21aYZ8"; 
+    
+    if (!apiKey || apiKey.includes("ここに")) {
+      throw new Error("コード内の★部分にAPIキーが貼り付けられていません！");
     }
 
-    // ■ モデル一覧を取得するAPIを叩く
-    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const { message, history } = req.body || {};
 
-    if (data.error) {
-      throw new Error(`APIエラー: ${data.error.message}`);
-    }
+    // ■ システムプロンプト（AIへの指示書）
+    // アルパカPCの店員になりきらせる設定です
+    const systemPrompt = `
+あなたは中古パソコンショップ「アルパカPC」のベテランサポート担当です。
+以下のマニュアルに基づき、お客様（初心者）に優しく、短く回答してください。
 
-    // チャットに使えるモデル（generateContent対応）だけを抜き出す
-    const models = (data.models || [])
-      .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
-      .map(m => m.name) // 例: "models/gemini-1.5-flash"
-      .join("\n");
+【トラブル解決マニュアル】
+・電源が入らない/落ちる → 「放電作業（コンセントを抜いて10分放置）」を提案。
+・Wi-Fiが繋がらない → 「USB無線LANアダプタ（小さな子機）」が挿さっているか確認させる（内蔵じゃない機種が多いため）。
+・パスワードが分からない/期限切れ → 「何も入力せず（空欄のまま）Enterキー」を試させる。
+・キーボード入力がおかしい → 「NumLock」キーを確認させる。
+・解決しない場合 → 「恐れ入りますが、詳細確認のためサポート（048-577-7990）までお電話ください」と案内。
 
-    const reply = `【成功！あなたのキーで使えるモデル一覧】\n\n${models || "見つかりませんでした"}\n\n★この中にある名前（models/〇〇）を使えば100%動きます！`;
+【回答のルール】
+・専門用語は使わず、初心者にもわかる言葉で。
+・1回に1つのことだけを質問して、状況を絞り込んでください。
+・マニュアルにないことは勝手に創作せず、サポートへ誘導してください。
+`;
 
-    return new Response(JSON.stringify({ reply }), {
-      headers: { 'Content-Type': 'application/json' }
+    // Gemini形式に変換
+    const contents = (history || []).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    }));
+
+    // 今回のメッセージを追加
+    contents.push({
+      role: "user",
+      parts: [{ text: `システム指示: ${systemPrompt}\n\nユーザーの質問: ${message}` }]
     });
+
+    // ■ モデル指定（リストにあった gemini-2.0-flash を使用！）
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    const apiRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: contents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 800,
+        }
+      })
+    });
+
+    if (!apiRes.ok) {
+      const errorText = await apiRes.text();
+      throw new Error(`Gemini API Error: ${apiRes.status} ${errorText}`);
+    }
+
+    const data = await apiRes.json();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "申し訳ありません、応答できませんでした。";
+
+    res.status(200).json({ reply });
 
   } catch (error) {
-    return new Response(JSON.stringify({ reply: `【診断エラー】\n${error.message}` }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    res.status(200).json({ reply: `【エラー】\n${error.message}` });
   }
-}
+};

@@ -167,8 +167,8 @@ module.exports = async (req, res) => {
       parts: [{ text: `システム指示: ${systemPrompt}\n\nユーザーの質問: ${message}` }]
     });
 
-// 無料テスト用の実験モデル "gemini-2.0-flash-exp" を指定
-const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+// 表で「無料枠あり」と確認できた "gemini-2.5-flash" を使用
+const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const apiRes = await fetch(url, {
       method: 'POST',

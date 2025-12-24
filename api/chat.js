@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
 
   try {
     // 1. APIキーの確認
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = "AIzaSyAAE0EQZcM0aa2qJy5TmBAkqW5Wx21aYZ8";
     if (!apiKey) {
       throw new Error("Vercelに 'GEMINI_API_KEY' が設定されていません。\nSettings > Environment Variables を確認し、設定後に Redeploy してください。");
     }

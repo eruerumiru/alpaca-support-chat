@@ -59,8 +59,8 @@ module.exports = async (req, res) => {
       parts: [{ text: `システム指示: ${systemPrompt}\n\nユーザーの質問: ${message}` }]
     });
 
-    // ■ モデル指定（リストにあった gemini-2.0-flash を使用！）
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+// 一番安定している無料モデル (1.5-flash) に変更
+const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const apiRes = await fetch(url, {
       method: 'POST',

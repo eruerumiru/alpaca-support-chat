@@ -20,7 +20,7 @@ export default async function handler(req) {
   try {
     // Vercelの設定か、直書きのキーを取得
     // ★もし直書きする場合は、下の "ここにキー" の部分に入れてください
-    const apiKey = process.env.GEMINI_API_KEY || "ここに直書きしたキー"; 
+    const apiKey = process.env.GEMINI_API_KEY || "AIzaSyAAE0EQZcM0aa2qJy5TmBAkqW5Wx21aYZ8"; 
 
     if (!apiKey || apiKey === "ここに直書きしたキー") {
       throw new Error("APIキーが見つかりません。コード内の 'ここに直書きしたキー' の部分にキーを貼ってください。");

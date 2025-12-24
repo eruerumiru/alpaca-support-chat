@@ -3,278 +3,83 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>アルパカPC トラブル解決サポート</title>
+<title>アルパカPC AIサポート</title>
 <style>
-  :root { --primary: #007bff; --bg: #f5f7f9; --chat-bg: #fff; --user-bg: #007bff; --bot-bg: #e9ecef; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; height: 100vh; }
-  .container { width: 100%; max-width: 600px; background: var(--chat-bg); display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.1); height: 100%; }
-  .header { background: #343a40; color: #fff; padding: 15px; text-align: center; font-weight: bold; font-size: 1.1em; flex-shrink: 0; }
-  .chat-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
-  .msg { padding: 12px 16px; border-radius: 12px; max-width: 85%; line-height: 1.6; word-wrap: break-word; font-size: 0.95em; animation: fadeIn 0.3s ease; position: relative; }
-  .bot { background: var(--bot-bg); color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
-  .user { background: var(--user-bg); color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
-  .options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; animation: fadeIn 0.5s ease; }
-  .btn { padding: 10px 16px; border: 1px solid var(--primary); background: #fff; color: var(--primary); border-radius: 20px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; user-select: none; }
-  .btn:hover { background: var(--primary); color: #fff; transform: translateY(-1px); }
-  .btn:active { transform: translateY(1px); }
-  .input-area { padding: 15px; border-top: 1px solid #dee2e6; display: flex; gap: 10px; background: #fff; flex-shrink: 0; }
-  input { flex: 1; padding: 12px 15px; border: 1px solid #ced4da; border-radius: 25px; outline: none; font-size: 1em; transition: border-color 0.2s; }
-  input:focus { border-color: var(--primary); }
-  button#send { padding: 0 25px; background: var(--primary); color: #fff; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-  button#send:hover { background: #0056b3; }
-  .ticket { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 8px; margin-top: 10px; font-size: 0.9em; white-space: pre-wrap; user-select: all; }
-  .reset-btn { margin-top: 10px; font-size: 0.8em; color: #666; text-decoration: underline; cursor: pointer; text-align: center; width: 100%; display: block; border: none; background: none; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  /* タイピング風アニメーション */
-  .typing { display: inline-block; width: 8px; height: 8px; background: #999; border-radius: 50%; margin-right: 4px; animation: dot 1.4s infinite ease-in-out both; }
-  .typing:nth-child(1) { animation-delay: -0.32s; }
-  .typing:nth-child(2) { animation-delay: -0.16s; }
-  @keyframes dot { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+  /* 前と同じスタイルでOKですが、少し調整 */
+  body { font-family: sans-serif; background: #f0f2f5; margin: 0; display: flex; justify-content: center; height: 100vh; }
+  .container { width: 100%; max-width: 600px; background: #fff; display: flex; flex-direction: column; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  .chat-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+  .msg { padding: 12px 16px; border-radius: 12px; max-width: 80%; line-height: 1.5; white-space: pre-wrap; }
+  .bot { background: #e4e6eb; align-self: flex-start; }
+  .user { background: #0084ff; color: #fff; align-self: flex-end; }
+  .input-area { padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 10px; }
+  input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; }
+  button { padding: 10px 20px; background: #333; color: #fff; border: none; border-radius: 20px; cursor: pointer; }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <div class="header">アルパカPC トラブル解決サポート</div>
-  <div class="chat-area" id="chat"></div>
+  <div style="background:#333; color:#fff; padding:15px; text-align:center;">アルパカPC AI店員</div>
+  <div class="chat-area" id="chat">
+    <div class="msg bot">こんにちは！PCの調子はどうですか？<br>どんなことでも自由に書いてみてください。（例：「なんか画面が暗い」「Wi-Fiが繋がらない」）</div>
+  </div>
   <div class="input-area">
-    <input type="text" id="input" placeholder="例：電源が入らない、Wi-Fiが切れる..." autocomplete="off">
+    <input type="text" id="input" placeholder="メッセージを入力...">
     <button id="send">送信</button>
   </div>
 </div>
 
 <script>
-// 設定: 自社の連絡先に書き換えてください
-const SUPPORT_EMAIL = "support@alpaca-pc.com";
-const SUPPORT_PHONE = "048-577-7990";
-const KB_URL = "data/support_kb.json?v=4"; // キャッシュ回避
+let history = []; // 会話の履歴を保存
 
-let kb = null;
-let currentFlow = null; // 現在進行中のトラブルフロー
-let logs = []; // 診断ログ
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const btn = document.getElementById('send');
 
-const chatEl = document.getElementById('chat');
-const inputEl = document.getElementById('input');
-const sendBtn = document.getElementById('send');
-
-// 初期化
-async function init() {
-  addBotMessage("読み込み中...", true); // タイピング表示
-  try {
-    const res = await fetch(KB_URL);
-    if(!res.ok) throw new Error("JSON load failed");
-    kb = await res.json();
-    
-    chatEl.innerHTML = ''; // クリア
-    addBotMessage(kb.default_msg);
-    showRootOptions();
-  } catch(e) {
-    chatEl.innerHTML = '';
-    addBotMessage("データの読み込みに失敗しました。ページを更新してください。");
-    console.error(e);
-  }
-}
-
-// メッセージ表示
-function addBotMessage(text, isTyping = false) {
-  const div = document.createElement('div');
-  div.className = 'msg bot';
-  if (isTyping) {
-    div.innerHTML = '<span class="typing"></span><span class="typing"></span><span class="typing"></span>';
-    chatEl.appendChild(div);
-    return div;
-  }
-  div.textContent = text;
-  chatEl.appendChild(div);
-  scrollToBottom();
-  return div;
-}
-
-function addUserMessage(text) {
-  const div = document.createElement('div');
-  div.className = 'msg user';
-  div.textContent = text;
-  chatEl.appendChild(div);
-  scrollToBottom();
-}
-
-function scrollToBottom() {
-  chatEl.scrollTop = chatEl.scrollHeight;
-}
-
-// 選択肢表示
-function showOptions(items, callback) {
-  const div = document.createElement('div');
-  div.className = 'options';
-  items.forEach(item => {
-    const btn = document.createElement('button');
-    btn.className = 'btn';
-    btn.textContent = item.label;
-    btn.onclick = () => {
-      div.remove(); // 選択後はボタンを消す
-      addUserMessage(item.label);
-      callback(item);
-    };
-    div.appendChild(btn);
-  });
-  chatEl.appendChild(div);
-  scrollToBottom();
-}
-
-function showRootOptions() {
-  const items = kb.troubles.map(t => ({ label: t.label, value: t.id }));
-  showOptions(items, (item) => startDiagnosis(item.value));
-}
-
-// 診断ロジック
-function startDiagnosis(troubleId) {
-  currentFlow = kb.troubles.find(t => t.id === troubleId);
-  logs = [`カテゴリ：${currentFlow.label}`]; // ログ開始
-  
-  if (currentFlow.questions && currentFlow.questions.length > 0) {
-    askStep(0); // 最初の質問へ
-  } else {
-    // 質問がない場合は解決策へ（簡易）
-    const firstKey = Object.keys(currentFlow.solutions)[0];
-    showSolution(firstKey);
-  }
-}
-
-function askStep(qIndex) {
-  const q = currentFlow.questions[qIndex];
-  addBotMessage(q.text);
-  
-  const items = q.options.map(opt => ({ ...opt, _qIndex: qIndex }));
-  showOptions(items, (choice) => {
-    logs.push(`Q: ${q.text}\nA: ${choice.label}`);
-    
-    // 分岐判定
-    if (choice.next === "solved") {
-      endChat(true);
-    } else if (choice.next.startsWith("sol_")) {
-      showSolution(choice.next);
-    } else if (choice.next.startsWith("q_")) {
-      // IDで次の質問を探す（今回は簡易的にindex+1で進むこともできるが、ID検索にする）
-      const nextQIndex = currentFlow.questions.findIndex(nq => nq.id === choice.next);
-      if (nextQIndex !== -1) askStep(nextQIndex);
-      else addBotMessage("エラー：次の質問が見つかりません");
-    } else {
-      // step_xxx への対応（solutionsへ）
-      showSolution(choice.next);
-    }
-  });
-}
-
-function showSolution(solKey) {
-  const sol = currentFlow.solutions[solKey];
-  if (!sol) {
-    // マッピングがない場合（step_restart等、古いID対応）
-    // 簡易的に解決したか聞く
-    askIfSolved(`手順: ${solKey} を試してください`);
-    return;
-  }
-  
-  addBotMessage(sol.text);
-  logs.push(`提示した解決策: ${sol.text.split('\n')[0]}...`);
-
-  if (sol.is_final) {
-    // これ以上提案がない場合 -> 解決確認へ
-    setTimeout(() => askIfSolved(), 1000);
-  } else {
-    // 続きがある場合（今回はシンプル化のため、すべて解決確認へ）
-    setTimeout(() => askIfSolved(), 1000);
-  }
-}
-
-function askIfSolved() {
-  addBotMessage("これで解決しましたか？");
-  showOptions([
-    { label: "解決した！", val: true },
-    { label: "ダメだった（サポートへ連絡）", val: false }
-  ], (c) => {
-    if (c.val) endChat(true);
-    else endChat(false);
-  });
-}
-
-// 終了処理
-function endChat(isSolved) {
-  if (isSolved) {
-    addBotMessage("よかったです！また何かあればご相談ください。");
-    showReset();
-  } else {
-    addBotMessage("お力になれず申し訳ありません。\n以下の文章をコピーして、メールまたはお電話で担当者にお伝えください。\nスムーズに対応できます。");
-    const ticket = `【サポート依頼】
-■困っていること
-${logs[0]}
-
-■試したこと・状況
-${logs.slice(1).join('\n')}
-
-■最終状況
-解決せず。担当者による対応希望。`;
-    
-    const ticketDiv = document.createElement('div');
-    ticketDiv.className = 'ticket';
-    ticketDiv.textContent = ticket;
-    chatEl.appendChild(ticketDiv);
-    
-    // コピーボタン
-    const btn = document.createElement('button');
-    btn.className = 'btn';
-    btn.style.marginTop = '10px';
-    btn.textContent = '文章をコピー';
-    btn.onclick = () => {
-      navigator.clipboard.writeText(ticket);
-      btn.textContent = 'コピーしました！';
-      setTimeout(() => btn.textContent = '文章をコピー', 2000);
-    };
-    chatEl.appendChild(btn);
-    
-    addBotMessage(`連絡先：\nメール: ${SUPPORT_EMAIL}\n電話: ${SUPPORT_PHONE}`);
-    showReset();
-  }
-}
-
-function showReset() {
-  const btn = document.createElement('button');
-  btn.className = 'reset-btn';
-  btn.textContent = '最初に戻る';
-  btn.onclick = () => init();
-  chatEl.appendChild(btn);
-  scrollToBottom();
-}
-
-// フリー入力検索
-function handleInput() {
-  const text = inputEl.value.trim();
+async function sendMessage() {
+  const text = input.value.trim();
   if (!text) return;
-  
-  addUserMessage(text);
-  inputEl.value = '';
-  
-  // キーワードマッチング
-  let hitId = null;
-  for (const t of kb.troubles) {
-    if (t.keywords.some(k => text.toLowerCase().includes(k))) {
-      hitId = t.id;
-      break;
-    }
-  }
-  
-  if (hitId) {
-    startDiagnosis(hitId);
-  } else {
-    addBotMessage(kb.not_found_msg);
-    showRootOptions();
+
+  // 自分のメッセージを表示
+  addMsg(text, 'user');
+  input.value = '';
+  input.disabled = true; // 送信中はロック
+
+  // AIに聞く
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history: history })
+    });
+    const data = await res.json();
+    
+    // AIの返事を表示
+    addMsg(data.reply, 'bot');
+    
+    // 履歴に追加（文脈を覚えさせる）
+    history.push({ role: 'user', content: text });
+    history.push({ role: 'assistant', content: data.reply });
+
+  } catch (e) {
+    addMsg("すみません、エラーが発生しました。", 'bot');
+  } finally {
+    input.disabled = false;
+    input.focus();
   }
 }
 
-sendBtn.onclick = handleInput;
-inputEl.onkeypress = (e) => { if(e.key === 'Enter') handleInput(); };
+function addMsg(text, role) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
 
-// 開始
-init();
+btn.onclick = sendMessage;
+input.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
 </script>
 </body>
 </html>

@@ -1,0 +1,81 @@
+{
+  "troubles": [
+    {
+      "id": "power",
+      "label": "電源・起動トラブル",
+      "keywords": ["電源", "つかない", "入らない", "起動しない", "真っ暗", "無反応", "ランプ"],
+      "questions": [
+        {
+          "id": "q_lamp",
+          "text": "PCの電源ランプや充電ランプは点灯・点滅していますか？",
+          "options": [
+            { "label": "点いている", "next": "step_restart" },
+            { "label": "消えている（無反応）", "next": "step_cable" }
+          ]
+        }
+      ],
+      "solutions": {
+        "step_cable": {
+          "text": "【放電確認】\n一度、ACアダプタやバッテリー（外せる場合）を外し、1分ほど放置してから再度繋ぎ直して電源を押してみてください。\n延長コードを使っている場合は、壁のコンセントに直接挿してみてください。",
+          "is_final": false
+        },
+        "step_restart": {
+          "text": "【強制再起動】\n画面が真っ暗なだけかもしれません。\n電源ボタンを「15秒以上」長押しして一度完全に切り、もう一度押してみてください。",
+          "is_final": false
+        }
+      }
+    },
+    {
+      "id": "net",
+      "label": "ネット・Wi-Fi",
+      "keywords": ["ネット", "Wi-Fi", "wifi", "繋がらない", "切れる", "地球儀", "インターネット"],
+      "questions": [
+        {
+          "id": "q_device",
+          "text": "スマホなど、他の機器はWi-Fiに繋がっていますか？",
+          "options": [
+            { "label": "他も繋がらない", "next": "step_router" },
+            { "label": "PCだけ繋がらない", "next": "step_pc_wifi" }
+          ]
+        }
+      ],
+      "solutions": {
+        "step_router": {
+          "text": "【ルーターの再起動】\n大元のWi-Fiルーターの電源コンセントを抜き、30秒待ってから挿し直してみてください。\nルーターのランプが安定するまで2〜3分待ちましょう。",
+          "is_final": false
+        },
+        "step_pc_wifi": {
+          "text": "【Wi-FiのOFF/ON】\nPC画面右下のWi-Fiマークをクリックし、一度Wi-Fiをオフにして、もう一度オンにしてみてください。\nまた「機内モード」になっていないかも確認してください。",
+          "is_final": false
+        }
+      }
+    },
+    {
+      "id": "slow",
+      "label": "動作が遅い・フリーズ",
+      "keywords": ["遅い", "重い", "固まる", "フリーズ", "動かない", "くるくる"],
+      "questions": [
+        {
+          "id": "q_when",
+          "text": "それはいつからですか？",
+          "options": [
+            { "label": "ずっと/最初から", "next": "step_spec" },
+            { "label": "最近急に/一時的", "next": "step_update" }
+          ]
+        }
+      ],
+      "solutions": {
+        "step_update": {
+          "text": "【更新の確認】\nWindows Updateが裏で動いている可能性があります。\nスタートボタン→設定→Windows Updateを確認し、更新があれば完了させて再起動してみてください。",
+          "is_final": false
+        },
+        "step_spec": {
+          "text": "【再起動】\n「シャットダウン」ではなく「再起動」を行うことで、メモリの状態がリフレッシュされて直ることがあります。一度お試しください。",
+          "is_final": false
+        }
+      }
+    }
+  ],
+  "default_msg": "どのような不具合ですか？（例：電源が入らない、ネットが遅い）",
+  "not_found_msg": "すみません、うまく聞き取れませんでした。以下のボタンから近いものを選ぶか、別の言葉で教えてください。"
+}

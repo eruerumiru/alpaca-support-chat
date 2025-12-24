@@ -1,577 +1,236 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PCトラブル診断サポート（チャット）</title>
-  <style>
-    :root { --bg:#fff; --card:#f7f7f7; --text:#111; --muted:#666; --border:#e7e7e7; }
-    body{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif; background:var(--bg); color:var(--text);}
-    .wrap{ max-width:860px; margin:18px auto; padding:0 12px; }
-    .header{ display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:10px; }
-    .title{ font-weight:800; font-size:18px; }
-    .badge{ font-size:12px; color:#fff; background:#111; padding:6px 10px; border-radius:999px; }
-    .card{ border:1px solid var(--border); border-radius:14px; padding:14px; }
-    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:10px;}
-    .hint{ font-size:12px; color:var(--muted); line-height:1.4; }
-    #chat{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
-    .msg{ padding:10px 12px; border-radius:12px; max-width:92%; white-space:pre-wrap; line-height:1.45; }
-    .bot{ background:var(--card); align-self:flex-start; }
-    .me{ background:#111; color:#fff; align-self:flex-end; }
-    #choices{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-    button{ border:1px solid #dcdcdc; background:#fff; border-radius:12px; padding:8px 10px; cursor:pointer; }
-    button.primary{ background:#111; color:#fff; border-color:#111; }
-    button.ghost{ background:#fff; color:#111; }
-    button:disabled{ opacity:.5; cursor:not-allowed; }
-    .inputRow{ display:flex; gap:8px; margin-top:10px; }
-    input[type="text"], textarea{
-      width:100%; border:1px solid #dcdcdc; border-radius:12px; padding:10px 12px; font-size:14px;
-    }
-    textarea{ min-height:90px; resize:vertical; }
-    .split{ display:grid; grid-template-columns: 1fr; gap:12px; margin-top:14px; }
-    @media(min-width: 860px){ .split{ grid-template-columns: 1fr 1fr; } }
-    .panel{ border:1px dashed var(--border); border-radius:14px; padding:12px; }
-    .panel h3{ margin:0 0 6px; font-size:14px; }
-    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; white-space:pre-wrap; }
-    .warn{ background:#fff5f5; border:1px solid #ffd1d1; }
-    .ok{ background:#f3fff3; border:1px solid #cceacc; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アルパカPC トラブル解決チャット</title>
+<style>
+  body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f0f2f5; margin: 0; display: flex; justify-content: center; height: 100vh; }
+  .chat-container { width: 100%; max-width: 600px; background: #fff; display: flex; flex-direction: column; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  .header { background: #333; color: #fff; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2em; }
+  .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+  .message { padding: 12px 16px; border-radius: 12px; max-width: 80%; line-height: 1.5; white-space: pre-wrap; animation: fadeIn 0.3s ease; }
+  .bot { background: #e4e6eb; align-self: flex-start; color: #000; border-bottom-left-radius: 2px; }
+  .user { background: #0084ff; align-self: flex-end; color: #fff; border-bottom-right-radius: 2px; }
+  .options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
+  .btn { padding: 8px 16px; border: 1px solid #0084ff; background: #fff; color: #0084ff; border-radius: 20px; cursor: pointer; transition: 0.2s; font-size: 0.9em; }
+  .btn:hover { background: #0084ff; color: #fff; }
+  .btn-primary { background: #0084ff; color: #fff; }
+  .input-area { padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 10px; background: #fff; }
+  input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
+  button#send { padding: 10px 20px; background: #333; color: #fff; border: none; border-radius: 20px; cursor: pointer; }
+  button#send:disabled { background: #ccc; }
+  .ticket-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 8px; margin-top: 10px; font-size: 0.9em; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+</style>
 </head>
 <body>
-<div class="wrap">
-  <div class="header">
-    <div class="title">PCトラブル診断サポート（初心者向け）</div>
-    <div class="badge">ボタンで進む</div>
-  </div>
 
-  <div class="card">
-    <div class="row">
-      <div class="hint">
-        目的：症状を整理して、解決できればその場で解決。無理なら「サポートへ伝える文章」を自動で作ります。<br>
-        ※ 物理的な事故（水こぼし/焦げ臭い/煙/発熱）や詐欺警告は、無理に操作せず案内に従ってください。
-      </div>
-      <div>
-        <button class="ghost" id="resetBtn">最初から</button>
-      </div>
-    </div>
-
-    <div id="chat"></div>
-
-    <div id="freeInput" style="display:none;">
-      <div class="inputRow">
-        <input id="textInput" type="text" placeholder="ここに入力（例：青い画面になって再起動します）" />
-        <button class="primary" id="sendTextBtn">送信</button>
-      </div>
-      <div class="hint" style="margin-top:6px;">※ 分からなければ空欄のまま「送信」でもOK</div>
-    </div>
-
-    <div id="choices"></div>
-
-    <div class="split" id="resultArea" style="display:none;">
-      <div class="panel ok">
-        <h3>サポートに送る文章（メール/フォーム用）</h3>
-        <div class="mono" id="ticketText"></div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
-          <button class="primary" id="copyBtn">コピー</button>
-          <a id="mailBtn" href="#" style="text-decoration:none;">
-            <button>メールで送る</button>
-          </a>
-        </div>
-        <div class="hint" style="margin-top:8px;">
-          可能なら添付：①エラー画面の写真 ②本体底面/側面の型番ラベル写真
-        </div>
-      </div>
-
-      <div class="panel warn">
-        <h3>緊急/注意（該当する場合）</h3>
-        <div class="mono" id="safetyText"></div>
-        <div class="hint" style="margin-top:8px;">
-          詐欺警告やリモート操作要求が出た場合は、支払い・電話・インストール・クレカ入力はしないでください。
-        </div>
-      </div>
-    </div>
+<div class="chat-container">
+  <div class="header">アルパカPC サポートチャット</div>
+  <div class="chat-box" id="chatBox"></div>
+  <div class="input-area" id="inputArea">
+    <input type="text" id="userInput" placeholder="症状を入力（例：電源が入らない）" />
+    <button id="send">送信</button>
   </div>
 </div>
 
 <script>
-/** ★自社用にここだけ編集（仮のままにしてある） */
-const SHOP_NAME = "アルパカPC";
-const SUPPORT_EMAIL = "support@example.com"; // ←ここを書き換え
-const SUPPORT_PHONE = "000-0000-0000";       // ←ここを書き換え
-const SUPPORT_HOURS = "平日 10:00-17:00";    // ←必要なら書き換え
+// 設定（必要に応じて書き換えてください）
+const JSON_URL = 'data/support_kb.json?v=3'; 
+const SUPPORT_INFO = "解決しない場合は、以下の文章をコピーして\nメール(support@alpaca-pc.com) または お電話でお伝えください。";
 
-const chat = document.getElementById("chat");
-const choices = document.getElementById("choices");
-const resetBtn = document.getElementById("resetBtn");
-const freeInput = document.getElementById("freeInput");
-const textInput = document.getElementById("textInput");
-const sendTextBtn = document.getElementById("sendTextBtn");
-const resultArea = document.getElementById("resultArea");
-const ticketText = document.getElementById("ticketText");
-const safetyText = document.getElementById("safetyText");
-const copyBtn = document.getElementById("copyBtn");
-const mailBtn = document.getElementById("mailBtn");
+let kbData = null;
+let currentTrouble = null;
+let historyLog = []; // 診断ログ
 
-const state = {
-  deviceType: null,        // laptop/desktop/unknown
-  powerState: null,        // no / on_black / on_logo / on_windows / unknown
-  category: null,          // power/screen/boot/slow/net/sound/scam/other
-  whenStarted: null,       // today/yesterday/week/unknown
-  trigger: null,           // update/drop/water/none/unknown
-  peripherals: null,       // yes/no/unknown
-  errorText: "",           // free text
-  stepsTried: [],
-  resolved: false,
-  safetyFlags: [],         // strings
-  notes: [],
-};
+const chatBox = document.getElementById('chatBox');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('send');
+const inputArea = document.getElementById('inputArea');
 
-function say(who, text){
-  const div = document.createElement("div");
-  div.className = `msg ${who}`;
+// 初期化
+async function init() {
+  try {
+    const res = await fetch(JSON_URL);
+    if (!res.ok) throw new Error("Data load failed");
+    kbData = await res.json();
+    addBotMessage(kbData.default_msg);
+    showTopOptions();
+  } catch (e) {
+    addBotMessage("データの読み込みに失敗しました。ページを更新してください。");
+  }
+}
+
+// メッセージ表示系
+function addBotMessage(text) {
+  const div = document.createElement('div');
+  div.className = 'message bot';
   div.textContent = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+  chatBox.appendChild(div);
+  scrollToBottom();
+  return div;
 }
 
-function setChoices(list){
-  choices.innerHTML = "";
-  freeInput.style.display = "none";
-  list.forEach(item=>{
-    const b = document.createElement("button");
-    b.textContent = item.label;
-    if(item.primary) b.classList.add("primary");
-    b.onclick = item.onClick;
-    choices.appendChild(b);
+function addUserMessage(text) {
+  const div = document.createElement('div');
+  div.className = 'message user';
+  div.textContent = text;
+  chatBox.appendChild(div);
+  scrollToBottom();
+}
+
+function addOptions(options, callback) {
+  const div = document.createElement('div');
+  div.className = 'options';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.textContent = opt.label;
+    btn.onclick = () => {
+      div.remove(); // ボタンを押したら消す（履歴に残さないため）
+      addUserMessage(opt.label);
+      callback(opt);
+    };
+    div.appendChild(btn);
+  });
+  // botメッセージの直後に追加
+  chatBox.lastElementChild.appendChild(div);
+  scrollToBottom();
+}
+
+function scrollToBottom() {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// ロジック系
+function showTopOptions() {
+  // JSONのカテゴリ一覧をボタンとして出す
+  const opts = kbData.troubles.map(t => ({ label: t.label, value: t.id }));
+  addOptions(opts, (opt) => startDiagnosis(opt.value));
+}
+
+function findTroubleByText(text) {
+  // キーワードマッチング
+  for (const t of kbData.troubles) {
+    if (t.keywords.some(k => text.includes(k))) {
+      return t.id;
+    }
+  }
+  return null;
+}
+
+function startDiagnosis(troubleId) {
+  currentTrouble = kbData.troubles.find(t => t.id === troubleId);
+  historyLog.push(`カテゴリ: ${currentTrouble.label}`);
+  
+  // 最初の質問を表示（あれば）
+  if (currentTrouble.questions && currentTrouble.questions.length > 0) {
+    askQuestion(0);
+  } else {
+    // 質問がなければ解決策へ（簡易版）
+    showSolution(Object.keys(currentTrouble.solutions)[0]);
+  }
+}
+
+function askQuestion(index) {
+  const q = currentTrouble.questions[index];
+  addBotMessage(q.text);
+  
+  // 選択肢の処理
+  const opts = q.options.map(o => ({ ...o, qIndex: index }));
+  addOptions(opts, (choice) => {
+    historyLog.push(`Q: ${q.text} -> A: ${choice.label}`);
+    
+    // 次のアクションへ
+    if (choice.next.startsWith('step_')) {
+      showSolution(choice.next);
+    } else if (choice.next.startsWith('q_')) {
+      // 次の質問へ（ID検索などは省略、配列順で簡易実装も可だが今回はnext指定）
+      // ※簡易実装のため、solutionsへ誘導
+      addBotMessage("状況を確認しました。");
+    }
   });
 }
 
-function askText(placeholder, onSubmit){
-  freeInput.style.display = "block";
-  textInput.value = "";
-  textInput.placeholder = placeholder;
-  textInput.focus();
-  sendTextBtn.onclick = ()=>{
-    const v = (textInput.value || "").trim();
-    say("me", v ? v : "（入力なし）");
-    freeInput.style.display = "none";
-    onSubmit(v);
-  };
-}
+function showSolution(stepId) {
+  const sol = currentTrouble.solutions[stepId];
+  if (!sol) return;
 
-function addStep(s){ if(!state.stepsTried.includes(s)) state.stepsTried.push(s); }
-function addSafety(s){ if(!state.safetyFlags.includes(s)) state.safetyFlags.push(s); }
-function addNote(s){ state.notes.push(s); }
+  addBotMessage(sol.text);
+  historyLog.push(`提案: ${sol.text.split('\n')[0]}`);
 
-function reset(){
-  chat.innerHTML = "";
-  resultArea.style.display = "none";
-  Object.assign(state, {
-    deviceType:null, powerState:null, category:null, whenStarted:null, trigger:null,
-    peripherals:null, errorText:"", stepsTried:[], resolved:false, safetyFlags:[], notes:[]
-  });
-  start();
-}
-
-resetBtn.onclick = reset;
-
-copyBtn.onclick = async ()=>{
-  try{
-    await navigator.clipboard.writeText(ticketText.textContent);
-    alert("コピーしました！");
-  }catch{
-    alert("コピーに失敗しました。手動で選択してコピーしてください。");
-  }
-};
-
-function buildTicket(){
-  const lines = [];
-  lines.push(`【${SHOP_NAME} サポート依頼】`);
-  lines.push(`▼お客様状況まとめ`);
-  lines.push(`・機種：${state.deviceType==="laptop"?"ノート":"デスクトップ"}（不明なら不明）`);
-  lines.push(`・症状カテゴリ：${labelOfCategory(state.category)}`);
-  lines.push(`・電源/画面の状態：${labelOfPowerState(state.powerState)}`);
-  lines.push(`・発生時期：${labelOfWhen(state.whenStarted)}`);
-  lines.push(`・きっかけ：${labelOfTrigger(state.trigger)}`);
-  lines.push(`・外部機器：${labelOfYesNo(state.peripherals)}`);
-  if(state.errorText) lines.push(`・表示/メッセージ/状況：${state.errorText}`);
-  lines.push("");
-  lines.push("▼試したこと");
-  if(state.stepsTried.length){
-    state.stepsTried.forEach(s=>lines.push(`・${s}`));
-  }else{
-    lines.push("・（まだ試していません）");
-  }
-  lines.push("");
-  lines.push("▼希望");
-  lines.push("・データ優先：はい / いいえ（どちらか記入）");
-  lines.push("・連絡方法：メール / 電話（どちらか）");
-  lines.push("");
-  lines.push("▼添付（可能なら）");
-  lines.push("・エラー画面の写真 / 型番ラベル写真 / 画面が映らない様子の写真");
-  return lines.join("\n");
-}
-
-function buildMailtoBody(){
-  const subject = encodeURIComponent(`${SHOP_NAME} サポート依頼`);
-  const body = encodeURIComponent(ticketText.textContent);
-  return `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
-}
-
-function showResult(){
-  resultArea.style.display = "grid";
-  ticketText.textContent = buildTicket();
-  mailBtn.href = buildMailtoBody();
-
-  if(state.safetyFlags.length){
-    safetyText.textContent = state.safetyFlags.map(s=>`・${s}`).join("\n");
-  }else{
-    safetyText.textContent = `・緊急事項は特に検出されませんでした。\n・直らない場合は ${SUPPORT_EMAIL} / ${SUPPORT_PHONE}（${SUPPORT_HOURS}）へ、左の文章を貼ってご連絡ください。`;
-  }
-}
-
-/** labels */
-function labelOfCategory(c){
-  const m = {
-    power:"電源が入らない/落ちる",
-    screen:"画面が映らない/真っ暗",
-    boot:"起動しない/途中で止まる",
-    slow:"遅い/フリーズ",
-    net:"ネット/Wi-Fi",
-    sound:"音が出ない",
-    scam:"詐欺警告/ウイルス表示",
-    other:"その他"
-  };
-  return m[c] || "不明";
-}
-function labelOfPowerState(p){
-  const m = {
-    no:"完全に無反応（ランプも反応なし）",
-    on_black:"電源は入るが画面が真っ暗",
-    on_logo:"ロゴで止まる/クルクル終わらない",
-    on_windows:"Windowsは起動するが不具合",
-    unknown:"不明"
-  };
-  return m[p] || "不明";
-}
-function labelOfWhen(w){
-  const m = { today:"今日", yesterday:"昨日", week:"ここ1週間以内", long:"前から", unknown:"不明" };
-  return m[w] || "不明";
-}
-function labelOfTrigger(t){
-  const m = { update:"更新（Windows Update等）の後", drop:"落下/ぶつけた", water:"水/飲み物をこぼした", newapp:"ソフトを入れた後", none:"特に思い当たらない", unknown:"不明" };
-  return m[t] || "不明";
-}
-function labelOfYesNo(v){
-  const m = { yes:"あり（USB等が接続）", no:"なし", unknown:"不明" };
-  return m[v] || "不明";
-}
-
-/** flow */
-function start(){
-  say("bot", `${SHOP_NAME}の「かんたんトラブル診断」へようこそ。\nいまの状況をボタンで選ぶだけで、解決手順か、サポートに伝える文章を作ります。`);
-  say("bot", "まず、パソコンはどれ？");
-  setChoices([
-    {label:"ノートPC", onClick:()=>{ say("me","ノートPC"); state.deviceType="laptop"; askPower(); }, primary:true},
-    {label:"デスクトップPC", onClick:()=>{ say("me","デスクトップPC"); state.deviceType="desktop"; askPower(); }, primary:true},
-    {label:"分からない", onClick:()=>{ say("me","分からない"); state.deviceType="unknown"; askPower(); }},
-  ]);
-}
-
-function askPower(){
-  say("bot","いまの状態に一番近いのはどれ？");
-  setChoices([
-    {label:"電源が入らない（無反応）", onClick:()=>{ say("me","電源が入らない"); state.powerState="no"; state.category="power"; askWhen(); }},
-    {label:"電源は入るが画面が真っ暗", onClick:()=>{ say("me","画面が真っ暗"); state.powerState="on_black"; state.category="screen"; askWhen(); }},
-    {label:"ロゴで止まる/起動が終わらない", onClick:()=>{ say("me","起動が終わらない"); state.powerState="on_logo"; state.category="boot"; askWhen(); }},
-    {label:"Windowsは起動するが困ってる", onClick:()=>{ say("me","Windowsは起動する"); state.powerState="on_windows"; askCategoryInWindows(); }},
-    {label:"よく分からない", onClick:()=>{ say("me","よく分からない"); state.powerState="unknown"; askWhen(); }},
-  ]);
-}
-
-function askCategoryInWindows(){
-  say("bot","何が一番困る？（いちばん近いのを1つ）");
-  setChoices([
-    {label:"遅い/フリーズする", onClick:()=>{ say("me","遅い/フリーズ"); state.category="slow"; askWhen(); }, primary:true},
-    {label:"ネット/Wi-Fi", onClick:()=>{ say("me","ネット"); state.category="net"; askWhen(); }, primary:true},
-    {label:"音が出ない", onClick:()=>{ say("me","音"); state.category="sound"; askWhen(); }},
-    {label:"詐欺っぽい警告/ウイルス表示", onClick:()=>{ say("me","詐欺警告"); state.category="scam"; askWhen(); }},
-    {label:"その他（文章で説明）", onClick:()=>{ say("me","その他"); state.category="other"; askWhen(); }},
-  ]);
-}
-
-function askWhen(){
-  say("bot","いつから？");
-  setChoices([
-    {label:"今日", onClick:()=>{ say("me","今日"); state.whenStarted="today"; askTrigger(); }, primary:true},
-    {label:"昨日", onClick:()=>{ say("me","昨日"); state.whenStarted="yesterday"; askTrigger(); }},
-    {label:"ここ1週間以内", onClick:()=>{ say("me","ここ1週間"); state.whenStarted="week"; askTrigger(); }},
-    {label:"前から（ずっと）", onClick:()=>{ say("me","前から"); state.whenStarted="long"; askTrigger(); }},
-    {label:"分からない", onClick:()=>{ say("me","分からない"); state.whenStarted="unknown"; askTrigger(); }},
-  ]);
-}
-
-function askTrigger(){
-  say("bot","きっかけは思い当たる？");
-  setChoices([
-    {label:"更新（Windows Update等）の後", onClick:()=>{ say("me","更新後"); state.trigger="update"; askPeripherals(); }, primary:true},
-    {label:"落とした/ぶつけた", onClick:()=>{ say("me","落下/衝撃"); state.trigger="drop"; addSafety("落下/衝撃後の不具合は、無理な操作で悪化することがあります。可能ならこの時点でサポートへ。"); askPeripherals(); }},
-    {label:"水/飲み物をこぼした", onClick:()=>{ say("me","水こぼし"); state.trigger="water"; addSafety("水濡れは通電で故障が広がる可能性があります。すぐ電源を切り、充電器も抜いて、乾燥させてサポートへ。"); askPeripherals(); }},
-    {label:"ソフトを入れた後", onClick:()=>{ say("me","ソフト導入後"); state.trigger="newapp"; askPeripherals(); }},
-    {label:"特に思い当たらない", onClick:()=>{ say("me","特になし"); state.trigger="none"; askPeripherals(); }},
-    {label:"分からない", onClick:()=>{ say("me","分からない"); state.trigger="unknown"; askPeripherals(); }},
-  ]);
-}
-
-function askPeripherals(){
-  say("bot","USBなど外部機器はつながってる？（プリンタ/外付けHDD/USBメモリなど）");
-  setChoices([
-    {label:"つながってる", onClick:()=>{ say("me","つながってる"); state.peripherals="yes"; goFlow(); }, primary:true},
-    {label:"つながってない", onClick:()=>{ say("me","つながってない"); state.peripherals="no"; goFlow(); }},
-    {label:"分からない", onClick:()=>{ say("me","分からない"); state.peripherals="unknown"; goFlow(); }},
-  ]);
-}
-
-function goFlow(){
-  // 追加情報（自由入力）が必要なカテゴリだけ聞く
-  if(state.category === "other"){
-    say("bot","どんな症状？短くでOK（例：印刷できない、パスワード忘れた、など）");
-    return askText("例：印刷できない／青い画面になる／ログインできない", (v)=>{
-      state.errorText = v;
-      flowByCategory();
+  // 解決したか聞く
+  setTimeout(() => {
+    addBotMessage("これで改善しましたか？");
+    addOptions([
+      { label: "直った！", val: true },
+      { label: "直らない", val: false }
+    ], (res) => {
+      if (res.val) {
+        addBotMessage("よかったです！また何かあればご相談ください。");
+        // リセットボタンなど
+        addOptions([{label: "最初に戻る", next: "reset"}], () => location.reload());
+      } else {
+        historyLog.push("結果: 改善せず");
+        generateTicket();
+      }
     });
+  }, 800);
+}
+
+function generateTicket() {
+  const ticket = `
+【サポート依頼】
+■トラブル内容
+${historyLog.join('\n')}
+
+■お客様希望
+担当者によるサポート希望
+`.trim();
+
+  addBotMessage(SUPPORT_INFO);
+  
+  const div = document.createElement('div');
+  div.className = 'ticket-box';
+  div.innerText = ticket;
+  chatBox.appendChild(div);
+
+  // コピーボタン
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'btn btn-primary';
+  copyBtn.textContent = '文章をコピーする';
+  copyBtn.style.marginTop = '10px';
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(ticket);
+    alert('コピーしました');
+  };
+  chatBox.appendChild(copyBtn);
+  scrollToBottom();
+}
+
+// フリー入力の処理
+sendBtn.onclick = handleInput;
+userInput.onkeypress = (e) => { if(e.key === 'Enter') handleInput(); };
+
+function handleInput() {
+  const text = userInput.value.trim();
+  if (!text) return;
+  
+  addUserMessage(text);
+  userInput.value = '';
+
+  // キーワードからカテゴリ推定
+  const tid = findTroubleByText(text);
+  if (tid) {
+    startDiagnosis(tid);
+  } else {
+    addBotMessage(kbData.not_found_msg);
+    showTopOptions(); // 選択肢に戻す
   }
-  if(state.category === "scam"){
-    say("bot","どんな表示？（例：ウイルス感染・電話してください・支払いが必要 など）\n分かる範囲でOK。");
-    return askText("例：ウイルス感染と出て電話を要求された", (v)=>{
-      state.errorText = v;
-      addSafety("詐欺警告の可能性があります。表示の電話番号へはかけず、支払い・インストール・クレカ入力はしないでください。");
-      flowByCategory();
-    });
-  }
-  flowByCategory();
 }
 
-function flowByCategory(){
-  if(state.category==="power") return flowPowerNo();
-  if(state.category==="screen") return flowScreenBlack();
-  if(state.category==="boot") return flowBootStuck();
-  if(state.category==="slow") return flowSlowFreeze();
-  if(state.category==="net") return flowNet();
-  if(state.category==="sound") return flowSound();
-  if(state.category==="scam") return flowScam();
-  return flowOtherGeneric();
-}
-
-/** flows */
-function flowPowerNo(){
-  say("bot","まずは安全確認：焦げ臭い/煙/異常に熱い場合は、すぐコンセントを抜いてサポートへ。");
-  say("bot","次の手順を上から順にやってみてね（所要2分）");
-
-  setChoices([
-    {label:"手順を表示", onClick:()=>{
-      say("bot",
-`① コンセント/延長タップを差し直す（別のコンセントでも試す）
-② ノートなら：充電ランプが点くか確認（点かない→電源/充電器側の可能性）
-③ 電源ボタンを15秒長押し → 離す → もう一度押す
-④ デスクなら：本体背面の電源スイッチ(I/O)があればON確認`
-      );
-      addStep("コンセント差し直し／別コンセント確認");
-      addStep("電源ボタン15秒長押し");
-      addStep("（デスク）背面スイッチ確認");
-      askResolved();
-    }, primary:true},
-    {label:"今はできない→サポートに連絡", onClick:()=>{
-      say("me","今はできない");
-      addNote("お客様側で切り分け実施前（未対応）");
-      askErrorFreeTextThenResult();
-    }}
-  ]);
-}
-
-function flowScreenBlack(){
-  say("bot","画面が真っ暗の時は「映ってない」だけか「起動してない」かを切り分けます。");
-  setChoices([
-    {label:"手順を表示", onClick:()=>{
-      say("bot",
-`① 画面の明るさを上げる（Fnキー + 明るさ）
-② 外部モニタ/HDMIが刺さってたら外す
-③ 電源15秒長押しで一度切る → 入れ直す
-④ デスクなら：モニタ入力切替（HDMI/DP）を確認`
-      );
-      addStep("明るさ調整/Fnキー確認");
-      addStep("外部モニタ/HDMIを外して再起動");
-      addStep("電源15秒長押し→再起動");
-      askResolved();
-    }, primary:true},
-    {label:"ロゴすら出ないっぽい→サポート", onClick:()=>{
-      say("me","ロゴが出ない");
-      addNote("ロゴ表示なし（表示系/ハード寄りの可能性）");
-      askErrorFreeTextThenResult();
-    }}
-  ]);
-}
-
-function flowBootStuck(){
-  say("bot","起動が終わらない/ロゴで止まる時は、USB機器が原因のことも多いよ。");
-  setChoices([
-    {label:"手順を表示", onClick:()=>{
-      say("bot",
-`① USB機器を全部抜く（プリンタ/外付けHDD/USBメモリ等）
-② 電源15秒長押しで切る → 入れ直す
-③ それでもダメなら：何分待っても進まないか確認（目安：10分）
-④ “自動修復” が出るなら「スタートアップ修復」を試す（無理なら止めてOK）`
-      );
-      addStep("USB機器を全て外して起動");
-      addStep("電源15秒長押し→再起動");
-      addStep("（可能なら）スタートアップ修復");
-      askResolved();
-    }, primary:true},
-    {label:"データ最優先なので触りたくない→サポート", onClick:()=>{
-      say("me","データ最優先");
-      addSafety("データ最優先の場合、初期化/回復操作は自己判断で進めない方が安全です。サポートへ。");
-      addNote("データ最優先のため、お客様側で回復操作は実施せず");
-      askErrorFreeTextThenResult();
-    }}
-  ]);
-}
-
-function flowSlowFreeze(){
-  say("bot","遅い/フリーズは「再起動」と「熱」の確認で改善することが多いよ。");
-  setChoices([
-    {label:"手順を表示", onClick:()=>{
-      say("bot",
-`① シャットダウンではなく「再起動」をする
-② 本体が熱い/ファンがうるさい→電源を切って10分休ませる（通気を確保）
-③ 直らない場合：最近急に？（更新/ソフト/容量不足の可能性）
-④ 可能なら：タスクマネージャーで「CPU/メモリ/ディスク」が常に100%か確認`
-      );
-      addStep("再起動を実施");
-      addStep("発熱の確認／通気確保");
-      addStep("（可能なら）タスクマネージャー確認");
-      askResolved();
-    }, primary:true},
-    {label:"かなり熱い/勝手に落ちる→サポート", onClick:()=>{
-      say("me","熱い/落ちる");
-      addSafety("発熱で落ちる場合、内部清掃や冷却不良の可能性があります。無理に使い続けずサポートへ。");
-      askErrorFreeTextThenResult();
-    }}
-  ]);
-}
-
-function flowNet(){
-  say("bot","ネットは「PC側」か「ルーター/回線側」かの切り分けが大事だよ。");
-  setChoices([
-    {label:"手順を表示", onClick:()=>{
-      say("bot",
-`① 機内モードがOFFか確認（ノートはFnキーでも）
-② Wi-FiをOFF→ON（可能なら再起動）
-③ ルーターを再起動（電源抜いて30秒→挿す）
-④ スマホも同じWi-Fiで繋がらない？→回線/ルーター側の可能性大`
-      );
-      addStep("機内モードOFF/Wi-Fi ON-OFF");
-      addStep("ルーター再起動（30秒）");
-      addStep("スマホでも同症状か確認");
-      askResolved();
-    }, primary:true},
-    {label:"スマホは繋がるのにPCだけ無理→サポート", onClick:()=>{
-      say("me","PCだけ無理");
-      addNote("スマホ等はWi-Fi可、PCのみ不可");
-      askErrorFreeTextThenResult();
-    }}
-  ]);
-}
-
-function flowSound(){
-  say("bot","音が出ない時は「出力先が違う」ことが多いよ。");
-  setChoices([
-    {label:"手順を表示", onClick:()=>{
-      say("bot",
-`① 音量ミュート解除（右下のスピーカー）
-② 出力先を確認（スピーカー/ヘッドホン/HDMI/Bluetooth）
-③ ヘッドホンを抜き差し
-④ 再起動`
-      );
-      addStep("ミュート解除/音量確認");
-      addStep("出力先（スピーカー等）切替");
-      addStep("再起動");
-      askResolved();
-    }, primary:true},
-    {label:"HDMI/テレビに繋いだ後からおかしい→サポート", onClick:()=>{
-      say("me","HDMIの後から");
-      addNote("HDMI接続後に出力先が切り替わった可能性");
-      askErrorFreeTextThenResult();
-    }}
-  ]);
-}
-
-function flowScam(){
-  say("bot","OK、ここは最優先で被害を止めるよ。");
-  say("bot",
-`① 表示された電話番号にはかけない
-② “今すぐ支払う/インストール” は押さない
-③ ブラウザを閉じる（Alt + F4）
-④ 閉じられないならPCを再起動（可能なら）
-⑤ 可能なら表示のスクショを撮る`
-  );
-  addStep("ブラウザを閉じる（Alt+F4）");
-  addStep("押さない/支払わない/電話しない");
-  addStep("（可能なら）スクショ取得");
-  addSafety("詐欺警告の可能性が高いので、こちらで状況確認します。サポートへ。");
-  askErrorFreeTextThenResult();
-}
-
-function flowOtherGeneric(){
-  say("bot","状況がまだ曖昧でも大丈夫。分かる範囲で短く教えてね。");
-  askText("例：プリンタが印刷できない／Officeが開かない／パスワードが分からない", (v)=>{
-    state.errorText = v;
-    askErrorFreeTextThenResult();
-  });
-}
-
-function askResolved(){
-  say("bot","ここまでで改善した？");
-  setChoices([
-    {label:"直った！", onClick:()=>{
-      say("me","直った！");
-      state.resolved = true;
-      say("bot","よかった！念のため、同じ症状が再発したら「いつから/きっかけ/試したこと」を控えておくとスムーズだよ。");
-      showResult();
-      setChoices([{label:"最初からやり直す", onClick:reset, primary:true}]);
-    }, primary:true},
-    {label:"まだ直らない", onClick:()=>{
-      say("me","まだ直らない");
-      state.resolved = false;
-      askErrorFreeTextThenResult();
-    }, primary:true},
-    {label:"分からない/怖いのでサポート", onClick:()=>{
-      say("me","サポート希望");
-      state.resolved = false;
-      askErrorFreeTextThenResult();
-    }}
-  ]);
-}
-
-function askErrorFreeTextThenResult(){
-  say("bot","最後に、エラーメッセージや状況があれば教えてね（写真が一番助かる）。分からなければ空欄でOK。");
-  askText("例：ブルースクリーンで再起動／自動修復の画面が出る／Wi-Fiが見えない", (v)=>{
-    if(v) state.errorText = state.errorText ? (state.errorText + " / " + v) : v;
-
-    say("bot",
-`OK！サポートに伝える文章を作ったよ。
-このままメール/電話に使える形になってます。`
-    );
-    showResult();
-    setChoices([
-      {label:"最初からやり直す", onClick:reset, primary:true},
-    ]);
-
-    // 画面にも連絡先を軽く提示
-    say("bot", `連絡先：${SUPPORT_EMAIL} / ${SUPPORT_PHONE}（${SUPPORT_HOURS}）`);
-  });
-}
-
-reset();
+init();
 </script>
 </body>
 </html>

@@ -1,13 +1,12 @@
 // api/chat.js
-// Gemini 2.0 Flashモデルを使用（最新・高速！）
+// Gemini 2.5 Flash モデルを使用（有料契約対応・安全版）
 
 module.exports = async (req, res) => {
-  // CORS設定（ブラウザからのアクセスを許可）
+  // CORS設定
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // プレフライトリクエストへの応答
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -19,17 +18,16 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // ★ここに診断で成功したAPIキーを貼り付けてください！（""で囲む）
-    const apiKey = "AIzaSyAAE0EQZcM0aa2qJy5TmBAkqW5Wx21aYZ8"; 
+    // ★ここを「直書き」から「環境変数」に戻します（安全対策）
+    const apiKey = process.env.GEMINI_API_KEY; 
     
-    if (!apiKey || apiKey.includes("ここに")) {
-      throw new Error("コード内の★部分にAPIキーが貼り付けられていません！");
+    if (!apiKey) {
+      throw new Error("Vercelの環境変数(GEMINI_API_KEY)が設定されていません。");
     }
 
     const { message, history } = req.body || {};
 
-    // ■ システムプロンプト（AIへの指示書）
-    // アルパカPCの店員になりきらせる設定です
+    // ■ システムプロンプト（内容は以前のまま）
     const systemPrompt = `
 あなたは中古パソコンショップ「アルパカPC」の看板店員キャラクター、**「アルパカくん」**です。
 お客様はPC初心者の方が多いです。以下の【店舗情報】と【トラブル解決マニュアル】に基づいて、優しく丁寧に案内してください。
@@ -170,14 +168,14 @@ module.exports = async (req, res) => {
       parts: [{ text: msg.content }]
     }));
 
-    // 今回のメッセージを追加
     contents.push({
       role: "user",
       parts: [{ text: `システム指示: ${systemPrompt}\n\nユーザーの質問: ${message}` }]
     });
 
-// リストに存在した "gemini-flash-latest" を使用
-const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // ■ モデル指定（Gemini 2.5 Flash に固定）
+    // これで最新かつ安価なモデルが指定されます
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const apiRes = await fetch(url, {
       method: 'POST',

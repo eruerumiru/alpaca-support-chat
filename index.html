@@ -3,50 +3,183 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>アルパカPC AIサポート</title>
+<title>アルパカくんサポート</title>
 <style>
-  /* 前と同じスタイルでOKですが、少し調整 */
-  body { font-family: sans-serif; background: #f0f2f5; margin: 0; display: flex; justify-content: center; height: 100vh; }
-  .container { width: 100%; max-width: 600px; background: #fff; display: flex; flex-direction: column; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-  .chat-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-  .msg { padding: 12px 16px; border-radius: 12px; max-width: 80%; line-height: 1.5; white-space: pre-wrap; }
-  .bot { background: #e4e6eb; align-self: flex-start; }
-  .user { background: #0084ff; color: #fff; align-self: flex-end; }
-  .input-area { padding: 15px; border-top: 1px solid #ddd; display: flex; gap: 10px; }
-  input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; }
-  button { padding: 10px 20px; background: #333; color: #fff; border: none; border-radius: 20px; cursor: pointer; }
+  /* 全体の設定 */
+  body { 
+    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    background: #f4f8fb; /* 優しい背景色 */
+    margin: 0; 
+    display: flex; 
+    justify-content: center; 
+    height: 100vh; 
+  }
+
+  .container { 
+    width: 100%; 
+    max-width: 600px; 
+    background: #fff; 
+    display: flex; 
+    flex-direction: column; 
+    box-shadow: 0 0 20px rgba(0,0,0,0.05); 
+  }
+
+  /* ヘッダー */
+  .header {
+    background: #4A90E2; /* アルパカPCっぽい爽やかな青 */
+    color: #fff; 
+    padding: 15px; 
+    text-align: center; 
+    font-weight: bold;
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  .header img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+  }
+
+  /* チャットエリア */
+  .chat-area { 
+    flex: 1; 
+    padding: 20px; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px; 
+  }
+
+  /* メッセージの行（アイコン＋吹き出し） */
+  .msg-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  /* ユーザー側（右寄せ） */
+  .msg-row.user {
+    flex-direction: row-reverse;
+  }
+
+  /* アイコン画像 */
+  .icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #eee;
+    background: #fff;
+    flex-shrink: 0;
+  }
+
+  /* 吹き出し */
+  .bubble {
+    padding: 12px 16px;
+    border-radius: 18px;
+    max-width: 80%;
+    line-height: 1.6;
+    font-size: 0.95em;
+    position: relative;
+    word-wrap: break-word;
+  }
+
+  /* アルパカくんの吹き出し */
+  .bot .bubble {
+    background: #f0f0f0;
+    color: #333;
+    border-top-left-radius: 4px; /* 吹き出しっぽく */
+  }
+
+  /* ユーザーの吹き出し */
+  .user .bubble {
+    background: #4A90E2;
+    color: #fff;
+    border-top-right-radius: 4px;
+  }
+
+  /* 入力エリア */
+  .input-area { 
+    padding: 15px; 
+    border-top: 1px solid #eee; 
+    display: flex; 
+    gap: 10px; 
+    background: #fff;
+  }
+  
+  input { 
+    flex: 1; 
+    padding: 12px 15px; 
+    border: 1px solid #ddd; 
+    border-radius: 30px; 
+    outline: none; 
+    font-size: 16px;
+  }
+  
+  button { 
+    padding: 0 25px; 
+    background: #4A90E2; 
+    color: #fff; 
+    border: none; 
+    border-radius: 30px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    transition: opacity 0.2s;
+  }
+  
+  button:hover { opacity: 0.9; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <div style="background:#333; color:#fff; padding:15px; text-align:center;">アルパカPC AI店員</div>
-  <div class="chat-area" id="chat">
-    <div class="msg bot">こんにちは！PCの調子はどうですか？<br>どんなことでも自由に書いてみてください。（例：「なんか画面が暗い」「Wi-Fiが繋がらない」）</div>
+  <div class="header">
+    <img src="https://image.rakuten.co.jp/alpacapc/cabinet/item_new/06703877/imgrc0111028335.jpg" alt="">
+    アルパカくんサポート
   </div>
+  
+  <div class="chat-area" id="chat">
+    <div class="msg-row bot">
+      <img src="https://image.rakuten.co.jp/alpacapc/cabinet/item_new/06703877/imgrc0111028335.jpg" class="icon">
+      <div class="bubble">
+        こんにちは！<b>アルパカPCの「アルパカくん」</b>です！<br>
+        パソコンのことでお困りのことや、聞きたいことがあったら何でもボクに聞いてくださいね。<br>
+        （例：「電源が入らない」「返品したい」「支払い方法は？」など）
+      </div>
+    </div>
+  </div>
+
   <div class="input-area">
-    <input type="text" id="input" placeholder="メッセージを入力...">
+    <input type="text" id="input" placeholder="メッセージを入力してね...">
     <button id="send">送信</button>
   </div>
 </div>
 
 <script>
-let history = []; // 会話の履歴を保存
+let history = []; 
 
 const chat = document.getElementById('chat');
 const input = document.getElementById('input');
 const btn = document.getElementById('send');
+const ALPACA_ICON = "https://image.rakuten.co.jp/alpacapc/cabinet/item_new/06703877/imgrc0111028335.jpg";
 
 async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
 
-  // 自分のメッセージを表示
+  // 自分のメッセージを表示（アイコンなし）
   addMsg(text, 'user');
   input.value = '';
-  input.disabled = true; // 送信中はロック
+  input.disabled = true;
 
-  // AIに聞く
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -55,15 +188,14 @@ async function sendMessage() {
     });
     const data = await res.json();
     
-    // AIの返事を表示
+    // アルパカくんの返事を表示
     addMsg(data.reply, 'bot');
     
-    // 履歴に追加（文脈を覚えさせる）
     history.push({ role: 'user', content: text });
     history.push({ role: 'assistant', content: data.reply });
 
   } catch (e) {
-    addMsg("すみません、エラーが発生しました。", 'bot');
+    addMsg("ごめんね、ちょっと調子が悪いみたい…。もう一度試してみて！", 'bot');
   } finally {
     input.disabled = false;
     input.focus();
@@ -71,19 +203,31 @@ async function sendMessage() {
 }
 
 function addMsg(text, role) {
-  const div = document.createElement('div');
-  div.className = `msg ${role}`;
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
   
-  // ★ここを変更！
   if (role === 'bot') {
-    // AIのメッセージはHTMLタグ（<b>など）を有効にする
-    div.innerHTML = text;
+    // アルパカくんの場合：アイコン＋HTMLタグ有効
+    const img = document.createElement('img');
+    img.src = ALPACA_ICON;
+    img.className = 'icon';
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = text; // AIはHTMLタグを使う
+    
+    row.appendChild(img);
+    row.appendChild(bubble);
   } else {
-    // 自分のメッセージはそのままテキストとして表示
-    div.textContent = text;
+    // ユーザーの場合：吹き出しのみ＋テキスト
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text; // ユーザーは安全のためテキストのみ
+    
+    row.appendChild(bubble);
   }
 
-  chat.appendChild(div);
+  chat.appendChild(row);
   chat.scrollTop = chat.scrollHeight;
 }
 

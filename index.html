@@ -8,7 +8,7 @@
   /* 全体の設定 */
   body { 
     font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
-    background: #f4f8fb; /* 優しい背景色 */
+    background: #f4f8fb;
     margin: 0; 
     display: flex; 
     justify-content: center; 
@@ -26,7 +26,7 @@
 
   /* ヘッダー */
   .header {
-    background: #4A90E2; /* アルパカPCっぽい爽やかな青 */
+    background: #4A90E2;
     color: #fff; 
     padding: 15px; 
     text-align: center; 
@@ -55,7 +55,7 @@
     gap: 20px; 
   }
 
-  /* メッセージの行（アイコン＋吹き出し） */
+  /* メッセージの行 */
   .msg-row {
     display: flex;
     align-items: flex-start;
@@ -63,12 +63,10 @@
     animation: fadeIn 0.3s ease;
   }
 
-  /* ユーザー側（右寄せ） */
   .msg-row.user {
     flex-direction: row-reverse;
   }
 
-  /* アイコン画像 */
   .icon {
     width: 44px;
     height: 44px;
@@ -79,7 +77,6 @@
     flex-shrink: 0;
   }
 
-  /* 吹き出し */
   .bubble {
     padding: 12px 16px;
     border-radius: 18px;
@@ -90,19 +87,96 @@
     word-wrap: break-word;
   }
 
-  /* アルパカくんの吹き出し */
   .bot .bubble {
     background: #f0f0f0;
     color: #333;
-    border-top-left-radius: 4px; /* 吹き出しっぽく */
+    border-top-left-radius: 4px;
   }
 
-  /* ユーザーの吹き出し */
   .user .bubble {
     background: #4A90E2;
     color: #fff;
     border-top-right-radius: 4px;
   }
+
+  /* ▼▼▼ デザイン調整エリア ▼▼▼ */
+  .support-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+    width: 100%;
+    max-width: 320px; /* PCで見ても広がりすぎないように */
+    animation: fadeIn 0.5s ease;
+  }
+
+  /* 電話情報のエリア */
+  .phone-section {
+    background: #fff;
+    border: 1px solid #eee;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .phone-number {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-bottom: 4px;
+    text-decoration: none;
+  }
+  .phone-hours {
+    font-size: 0.75em;
+    color: #666;
+    display: block;
+    margin-bottom: 10px;
+  }
+  
+  /* 注意書きボックス */
+  .alert-box {
+    background: #fff4f4;
+    border: 1px solid #ffcccc;
+    color: #d32f2f;
+    font-size: 0.8em;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: left;
+    line-height: 1.5;
+  }
+
+  /* ボタン共通 */
+  .action-btn {
+    display: block;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.95em;
+    transition: transform 0.2s, opacity 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .action-btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+  }
+
+  /* お問い合わせフォームボタン（青） */
+  .btn-form {
+    background: #4A90E2;
+    color: #fff;
+    border: none;
+  }
+
+  /* LINEボタン（公式グリーン） */
+  .btn-line {
+    background: #06c755; /* LINE公式カラー */
+    color: #fff;
+    border: none;
+  }
+
+  /* ▲▲▲ 調整終了 ▲▲▲ */
 
   /* 入力エリア */
   .input-area { 
@@ -165,17 +239,20 @@
 
 <script>
 let history = []; 
-
 const chat = document.getElementById('chat');
 const input = document.getElementById('input');
 const btn = document.getElementById('send');
 const ALPACA_ICON = "https://image.rakuten.co.jp/alpacapc/cabinet/item_new/06703877/imgrc0111028335.jpg";
 
+// ★店舗の連絡先URL設定
+const URL_FORM = "https://www.alpaca-pc.com/ssl/contact/";
+const URL_LINE = "https://page.line.me/544rnszi?oat_content=url&openQrModal=true";
+const SHOP_PHONE = "048-577-7990";
+
 async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
 
-  // 自分のメッセージを表示（アイコンなし）
   addMsg(text, 'user');
   input.value = '';
   input.disabled = true;
@@ -188,14 +265,13 @@ async function sendMessage() {
     });
     const data = await res.json();
     
-    // アルパカくんの返事を表示
     addMsg(data.reply, 'bot');
     
     history.push({ role: 'user', content: text });
     history.push({ role: 'assistant', content: data.reply });
 
   } catch (e) {
-    addMsg("ごめんね、ちょっと調子が悪いみたい…。もう一度試してみて！", 'bot');
+    addMsg("ごめんね、ちょっと調子が悪いみたい…。もう一度試してみてください！", 'bot');
   } finally {
     input.disabled = false;
     input.focus();
@@ -207,23 +283,53 @@ function addMsg(text, role) {
   row.className = `msg-row ${role}`;
   
   if (role === 'bot') {
-    // アルパカくんの場合：アイコン＋HTMLタグ有効
     const img = document.createElement('img');
     img.src = ALPACA_ICON;
     img.className = 'icon';
     
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '5px';
+
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    bubble.innerHTML = text; // AIはHTMLタグを使う
+    bubble.innerHTML = text;
+    container.appendChild(bubble);
+
+    // ★ サポート案内エリア（ここをリニューアルしました） ★
+    const actions = document.createElement('div');
+    actions.className = 'support-actions';
     
+    actions.innerHTML = `
+      <div class="phone-section">
+        <a href="tel:${SHOP_PHONE}" class="phone-number">📞 ${SHOP_PHONE}</a>
+        <span class="phone-hours">電話受付時間：平日10時～17時(土日祝除く)</span>
+        
+        <div class="alert-box">
+          <span style="color:#333; display:block; margin-top:5px;">
+            電話の回線が少ない為、なかなか繋がらない場合もございます。お問い合わせフォームまたはLINEでお問い合わせいただければ<b>1営業日以内</b>にご返信いたします。
+          </span>
+        </div>
+      </div>
+
+      <a href="${URL_FORM}" target="_blank" class="action-btn btn-form">
+        ✉️ お問い合わせはこちら
+      </a>
+
+      <a href="${URL_LINE}" target="_blank" class="action-btn btn-line">
+        💬 LINEでお問い合わせはこちら
+      </a>
+    `;
+    
+    container.appendChild(actions);
     row.appendChild(img);
-    row.appendChild(bubble);
+    row.appendChild(container);
+
   } else {
-    // ユーザーの場合：吹き出しのみ＋テキスト
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    bubble.textContent = text; // ユーザーは安全のためテキストのみ
-    
+    bubble.textContent = text;
     row.appendChild(bubble);
   }
 

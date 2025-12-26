@@ -99,15 +99,58 @@
     border-top-right-radius: 4px;
   }
 
-  /* ▼▼▼ デザイン調整エリア ▼▼▼ */
-  .support-actions {
-    display: flex;
+  /* ▼▼▼ デザイン調整エリア（開閉式） ▼▼▼ */
+  .support-container {
+    margin-top: 8px;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  /* 開閉ボタン */
+  .toggle-btn {
+    background: #fff;
+    border: 1px solid #ddd;
+    color: #555;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    cursor: pointer;
+    text-align: left;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .toggle-btn:hover {
+    background: #f9f9f9;
+    color: #333;
+    border-color: #bbb;
+  }
+  .toggle-btn::after {
+    content: "▼";
+    font-size: 0.8em;
+    margin-left: auto;
+    color: #999;
+  }
+
+  /* 詳細エリア（初期は非表示） */
+  .details-area {
+    display: none; /* ここで隠す */
+    margin-top: 10px;
     flex-direction: column;
     gap: 12px;
-    margin-top: 10px;
-    width: 100%;
-    max-width: 320px; /* PCで見ても広がりすぎないように */
-    animation: fadeIn 0.5s ease;
+    animation: slideDown 0.3s ease;
+  }
+  
+  /* 表示用のクラス */
+  .details-area.show {
+    display: flex;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   /* 電話情報のエリア */
@@ -171,11 +214,10 @@
 
   /* LINEボタン（公式グリーン） */
   .btn-line {
-    background: #06c755; /* LINE公式カラー */
+    background: #06c755; 
     color: #fff;
     border: none;
   }
-
   /* ▲▲▲ 調整終了 ▲▲▲ */
 
   /* 入力エリア */
@@ -225,8 +267,7 @@
       <img src="https://image.rakuten.co.jp/alpacapc/cabinet/item_new/06703877/imgrc0111028335.jpg" class="icon">
       <div class="bubble">
         こんにちは！<b>アルパカPCの「アルパカくん」</b>です！<br>
-        パソコンのことでお困りのことや、聞きたいことがあったら何でもボクに聞いてくださいね。<br>
-        （例：「電源が入らない」「返品したい」「支払い方法は？」など）
+        パソコンのことでお困りのことや、聞きたいことがあったら何でもボクに聞いてくださいね。
       </div>
     </div>
   </div>
@@ -271,7 +312,7 @@ async function sendMessage() {
     history.push({ role: 'assistant', content: data.reply });
 
   } catch (e) {
-    addMsg("ごめんね、ちょっと調子が悪いみたい…。もう一度試してみてください！", 'bot');
+    addMsg("ごめんね、ちょっと調子が悪いみたい…。もう一度試してみて！", 'bot');
   } finally {
     input.disabled = false;
     input.focus();
@@ -283,6 +324,11 @@ function addMsg(text, role) {
   row.className = `msg-row ${role}`;
   
   if (role === 'bot') {
+    // ★ここを追加！：ボットが喋る前に、過去の問い合わせボタンを全部消す
+    const existingButtons = document.querySelectorAll('.support-container');
+    existingButtons.forEach(btn => btn.remove());
+    // ----------------------------------------------------
+
     const img = document.createElement('img');
     img.src = ALPACA_ICON;
     img.className = 'icon';
@@ -297,32 +343,54 @@ function addMsg(text, role) {
     bubble.innerHTML = text;
     container.appendChild(bubble);
 
-    // ★ サポート案内エリア（ここをリニューアルしました） ★
-    const actions = document.createElement('div');
-    actions.className = 'support-actions';
+    // ★ 開閉式の問い合わせエリア ★
+    const supportContainer = document.createElement('div');
+    supportContainer.className = 'support-container';
+
+    // 1. 開閉ボタン
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'toggle-btn';
+    toggleBtn.innerHTML = '💁‍♀️ 解決しないので担当者に問い合わせる';
     
-    actions.innerHTML = `
+    // 2. 詳細エリア（初期は隠れている）
+    const details = document.createElement('div');
+    details.className = 'details-area';
+    details.innerHTML = `
       <div class="phone-section">
         <a href="tel:${SHOP_PHONE}" class="phone-number">📞 ${SHOP_PHONE}</a>
         <span class="phone-hours">電話受付時間：平日10時～17時(土日祝除く)</span>
         
         <div class="alert-box">
+          <b>⚠️ 電話は混み合い、繋がりにくい場合がございます。</b><br>
           <span style="color:#333; display:block; margin-top:5px;">
-            電話の回線が少ない為、なかなか繋がらない場合もございます。お問い合わせフォームまたはLINEでお問い合わせいただければ<b>1営業日以内</b>にご返信いたします。
+            フォームまたはLINEなら<b>1営業日以内</b>に返信いたします。
           </span>
         </div>
       </div>
 
       <a href="${URL_FORM}" target="_blank" class="action-btn btn-form">
-        ✉️ お問い合わせはこちら
+        ✉️ お問い合わせフォーム
       </a>
 
       <a href="${URL_LINE}" target="_blank" class="action-btn btn-line">
-        💬 LINEでお問い合わせはこちら
+        💬 LINEでお問い合わせ
       </a>
     `;
-    
-    container.appendChild(actions);
+
+    // 3. クリックイベント（開閉処理）
+    toggleBtn.onclick = () => {
+      details.classList.toggle('show');
+      if(details.classList.contains('show')) {
+        toggleBtn.innerHTML = '✖ 閉じる';
+      } else {
+        toggleBtn.innerHTML = '💁‍♀️ 解決しないので担当者に問い合わせる';
+      }
+    };
+
+    supportContainer.appendChild(toggleBtn);
+    supportContainer.appendChild(details);
+    container.appendChild(supportContainer);
+
     row.appendChild(img);
     row.appendChild(container);
 

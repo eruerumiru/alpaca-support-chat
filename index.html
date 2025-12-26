@@ -313,13 +313,12 @@ function sendChip(element) {
   sendMessage();      
 }
 
-// ★ MarkdownをHTMLに変換する関数（改行変換はOFF、太字のみON） ★
+// ★ MarkdownをHTMLに変換する関数（太字のみON） ★
 function parseMarkdown(text) {
   if (!text) return "";
   let html = text;
-  // 1. **太字** を <b>太字</b> に変換
+  // **太字** を <b>太字</b> に変換
   html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-  // 2. 改行コードの変換は削除しました
   return html;
 }
 
@@ -339,7 +338,6 @@ async function sendMessage() {
     });
     const data = await res.json();
     
-    // ここで変換してから表示！
     addMsg(data.reply, 'bot');
     
     history.push({ role: 'user', content: text });
@@ -357,7 +355,6 @@ function addMsg(rawText, role) {
   const row = document.createElement('div');
   row.className = `msg-row ${role}`;
   
-  // HTMLタグに変換（太字のみ）
   const formattedText = parseMarkdown(rawText);
 
   if (role === 'bot') {
@@ -376,7 +373,6 @@ function addMsg(rawText, role) {
 
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    // innerHTMLを使ってタグを有効にする
     bubble.innerHTML = formattedText;
     container.appendChild(bubble);
 
@@ -386,12 +382,10 @@ function addMsg(rawText, role) {
 
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'toggle-btn';
-    // ★ボタン文言の変更★
     toggleBtn.innerHTML = '担当者に相談する(電話/フォーム/LINE)';
     
     const details = document.createElement('div');
     details.className = 'details-area';
-    // ★注意書き文言の変更★
     details.innerHTML = `
       <div class="phone-section">
         <a href="tel:${SHOP_PHONE}" class="phone-number">📞 ${SHOP_PHONE}</a>
@@ -405,7 +399,7 @@ function addMsg(rawText, role) {
       </div>
 
       <a href="${URL_FORM}" target="_blank" class="action-btn btn-form">
-       ✉️ お問い合わせフォーム
+       ✉️ お問合せフォーム
       </a>
 
       <a href="${URL_LINE}" target="_blank" class="action-btn btn-line">
@@ -413,14 +407,26 @@ function addMsg(rawText, role) {
       </a>
     `;
 
+    // ▼▼▼ ここを修正しました（自動スクロール追加） ▼▼▼
     toggleBtn.onclick = () => {
       details.classList.toggle('show');
+      
       if(details.classList.contains('show')) {
         toggleBtn.innerHTML = '✖ 閉じる';
+        
+        // ほんの少し待ってから（アニメーション開始後）、一番下までスクロールさせる
+        setTimeout(() => {
+          chat.scrollTo({
+            top: chat.scrollHeight,
+            behavior: 'smooth'
+          });
+        }, 100); 
+
       } else {
         toggleBtn.innerHTML = '担当者に相談する(電話/フォーム/LINE)';
       }
     };
+    // ▲▲▲ ▲▲▲
 
     supportContainer.appendChild(toggleBtn);
     supportContainer.appendChild(details);
@@ -430,7 +436,6 @@ function addMsg(rawText, role) {
     row.appendChild(container);
 
   } else {
-    // ユーザー側のメッセージ
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.innerHTML = formattedText; 
@@ -442,7 +447,6 @@ function addMsg(rawText, role) {
 }
 
 btn.onclick = sendMessage;
-input.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
-</script>
+input.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };</script>
 </body>
 </html>

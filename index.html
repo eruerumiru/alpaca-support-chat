@@ -99,7 +99,33 @@
     border-top-right-radius: 4px;
   }
 
-  /* ▼▼▼ 質問候補（チップ）のデザイン ▼▼▼ */
+  /* ▼▼▼ 選択肢チップのデザイン ▼▼▼ */
+  .choice-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .choice-btn {
+    background: #fff;
+    border: 1px solid #4A90E2;
+    color: #4A90E2;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: bold;
+  }
+
+  .choice-btn:hover {
+    background: #4A90E2;
+    color: #fff;
+  }
+
+  /* 初回提案用のチップ（既存のもの） */
   .suggestions {
     display: flex;
     flex-wrap: wrap;
@@ -107,29 +133,20 @@
     margin-top: 10px;
     max-width: 100%;
   }
-
   .chip {
-    background: #fff;
-    border: 1px solid #4A90E2;
+    background: #eaf4ff;
     color: #4A90E2;
     padding: 8px 16px;
     border-radius: 20px;
     font-size: 0.9em;
     cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    border: none;
   }
+  .chip:hover { background: #d0e7ff; }
 
-  .chip:hover {
-    background: #4A90E2;
-    color: #fff;
-  }
   /* ▲▲▲ ▲▲▲ */
 
-  /* 問い合わせ詳細エリア（開閉式） */
+  /* 問い合わせ詳細エリア */
   .support-container {
     margin-top: 8px;
     width: 100%;
@@ -280,9 +297,9 @@
           パソコンのことでお困りのことはありますか？下から選ぶか、自由に質問してくださいね。
         </div>
         <div class="suggestions">
-          <div class="chip" onclick="sendChip(this)">電源が入らない</div>
-          <div class="chip" onclick="sendChip(this)">パスワードを設定していないのにパスワード画面が出る</div>
-          <div class="chip" onclick="sendChip(this)">Wi-Fiが繋がらない</div>
+          <div class="chip" onclick="sendText(this.innerText)">電源が入らない</div>
+          <div class="chip" onclick="sendText(this.innerText)">パスワード画面から進まない</div>
+          <div class="chip" onclick="sendText(this.innerText)">Wi-Fiが繋がらない</div>
         </div>
       </div>
     </div>
@@ -301,25 +318,33 @@ const input = document.getElementById('input');
 const btn = document.getElementById('send');
 const ALPACA_ICON = "https://image.rakuten.co.jp/alpacapc/cabinet/item_new/06703877/imgrc0111028335.jpg";
 
-// ★店舗の連絡先URL設定
 const URL_FORM = "https://www.alpaca-pc.com/ssl/contact/";
 const URL_LINE = "https://page.line.me/544rnszi?oat_content=url&openQrModal=true";
 const SHOP_PHONE = "048-577-7990";
 
-// チップがクリックされた時の処理
-function sendChip(element) {
-  const text = element.innerText;
-  input.value = text; 
-  sendMessage();      
+// テキスト送信用の共通関数
+function sendText(text) {
+  input.value = text;
+  sendMessage();
 }
 
-// ★ MarkdownをHTMLに変換する関数（太字のみON） ★
+// Markdownの太字だけ変換
 function parseMarkdown(text) {
   if (!text) return "";
-  let html = text;
-  // **太字** を <b>太字</b> に変換
-  html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-  return html;
+  return text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+}
+
+// ★重要：AIの回答から選択肢タグを抜き出して、本文とリストに分ける関数
+function parseOptions(text) {
+  // 正規表現で [CHOICES:A,B,C] を探す
+  const match = text.match(/\[CHOICES:(.*?)\]/);
+  if (match) {
+    const optionsStr = match[1]; // "ノート,デスクトップ" の部分
+    const cleanText = text.replace(match[0], ''); // タグを消した本文
+    const options = optionsStr.split(',').map(s => s.trim()); // 配列にする
+    return { text: cleanText, options: options };
+  }
+  return { text: text, options: [] };
 }
 
 async function sendMessage() {
@@ -355,12 +380,11 @@ function addMsg(rawText, role) {
   const row = document.createElement('div');
   row.className = `msg-row ${role}`;
   
-  const formattedText = parseMarkdown(rawText);
-
   if (role === 'bot') {
-    // 過去の問い合わせボタンを消す
-    const existingButtons = document.querySelectorAll('.support-container');
-    existingButtons.forEach(btn => btn.remove());
+    // 過去のボタン削除
+    document.querySelectorAll('.support-container').forEach(e => e.remove());
+    // 過去の選択肢ボタンも削除（もし残すならこの行は消してOK）
+    // document.querySelectorAll('.choice-container').forEach(e => e.remove());
 
     const img = document.createElement('img');
     img.src = ALPACA_ICON;
@@ -370,13 +394,34 @@ function addMsg(rawText, role) {
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.gap = '5px';
+    container.style.maxWidth = '80%'; // 幅制限
+
+    // ★ここで選択肢タグの解析を行う
+    const parsed = parseOptions(rawText);
+    const formattedText = parseMarkdown(parsed.text); // 本文のみ太字変換
 
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
+    bubble.style.maxWidth = '100%'; // コンテナに合わせる
     bubble.innerHTML = formattedText;
     container.appendChild(bubble);
 
-    // ★ 開閉式の問い合わせエリア ★
+    // ★選択肢がある場合、ボタンを表示する
+    if (parsed.options.length > 0) {
+      const choiceContainer = document.createElement('div');
+      choiceContainer.className = 'choice-container';
+      
+      parsed.options.forEach(opt => {
+        const choiceBtn = document.createElement('button');
+        choiceBtn.className = 'choice-btn';
+        choiceBtn.innerText = opt;
+        choiceBtn.onclick = () => sendText(opt); // ボタンを押すとその文字を送信
+        choiceContainer.appendChild(choiceBtn);
+      });
+      container.appendChild(choiceContainer);
+    }
+
+    // 担当者問い合わせエリア（毎回表示）
     const supportContainer = document.createElement('div');
     supportContainer.className = 'support-container';
 
@@ -390,43 +435,27 @@ function addMsg(rawText, role) {
       <div class="phone-section">
         <a href="tel:${SHOP_PHONE}" class="phone-number">📞 ${SHOP_PHONE}</a>
         <span class="phone-hours">電話受付時間：平日10時～17時(土日祝除く)</span>
-        
         <div class="alert-box">
           <span style="color:#333; display:block;">
             電話の回線が少ない為、なかなか繋がらない場合もございます。お問い合わせフォームまたはLINEでお問い合わせいただければ<b>1営業日以内</b>にご返信いたします。
           </span>
         </div>
       </div>
-
-      <a href="${URL_FORM}" target="_blank" class="action-btn btn-form">
-       ✉️ お問合せフォーム
-      </a>
-
-      <a href="${URL_LINE}" target="_blank" class="action-btn btn-line">
-        💬 LINEでお問い合わせ
-      </a>
+      <a href="${URL_FORM}" target="_blank" class="action-btn btn-form"✉️ お問い合わせフォーム</a>
+      <a href="${URL_LINE}" target="_blank" class="action-btn btn-line">💬 LINEでお問い合わせ</a>
     `;
 
-    // ▼▼▼ ここを修正しました（自動スクロール追加） ▼▼▼
     toggleBtn.onclick = () => {
       details.classList.toggle('show');
-      
       if(details.classList.contains('show')) {
         toggleBtn.innerHTML = '✖ 閉じる';
-        
-        // ほんの少し待ってから（アニメーション開始後）、一番下までスクロールさせる
         setTimeout(() => {
-          chat.scrollTo({
-            top: chat.scrollHeight,
-            behavior: 'smooth'
-          });
+          chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
         }, 100); 
-
       } else {
         toggleBtn.innerHTML = '担当者に相談する(電話/フォーム/LINE)';
       }
     };
-    // ▲▲▲ ▲▲▲
 
     supportContainer.appendChild(toggleBtn);
     supportContainer.appendChild(details);
@@ -436,9 +465,10 @@ function addMsg(rawText, role) {
     row.appendChild(container);
 
   } else {
+    // ユーザー
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    bubble.innerHTML = formattedText; 
+    bubble.innerHTML = parseMarkdown(rawText); 
     row.appendChild(bubble);
   }
 
@@ -447,6 +477,7 @@ function addMsg(rawText, role) {
 }
 
 btn.onclick = sendMessage;
-input.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };</script>
+input.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
+</script>
 </body>
 </html>

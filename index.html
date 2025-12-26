@@ -91,6 +91,7 @@
     background: #f0f0f0;
     color: #333;
     border-top-left-radius: 4px;
+    max-width: 100%; /* コンテナ幅に合わせる */
   }
 
   .user .bubble {
@@ -99,7 +100,36 @@
     border-top-right-radius: 4px;
   }
 
-  /* ▼▼▼ 選択肢チップのデザイン ▼▼▼ */
+  /* ▼▼▼ リセットエリア（新機能） ▼▼▼ */
+  .reset-area {
+    background: #f9f9f9;
+    padding: 6px;
+    text-align: center;
+    border-top: 1px solid #eee;
+  }
+  
+  .reset-btn {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    color: #666;
+    font-size: 0.8em;
+    cursor: pointer;
+    padding: 4px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+    background: #fff;
+  }
+  
+  .reset-btn:hover {
+    color: #4A90E2;
+    border-color: #4A90E2;
+  }
+  /* ▲▲▲ ▲▲▲ */
+
+  /* 選択肢ボタン */
   .choice-container {
     display: flex;
     flex-wrap: wrap;
@@ -125,7 +155,7 @@
     color: #fff;
   }
 
-  /* 初回提案用のチップ（既存のもの） */
+  /* 初回チップ */
   .suggestions {
     display: flex;
     flex-wrap: wrap;
@@ -143,8 +173,6 @@
     border: none;
   }
   .chip:hover { background: #d0e7ff; }
-
-  /* ▲▲▲ ▲▲▲ */
 
   /* 問い合わせ詳細エリア */
   .support-container {
@@ -173,12 +201,6 @@
     color: #333;
     border-color: #bbb;
   }
-  .toggle-btn::after {
-    content: "▼";
-    font-size: 0.8em;
-    margin-left: auto;
-    color: #999;
-  }
 
   .details-area {
     display: none;
@@ -187,7 +209,6 @@
     gap: 12px;
     animation: slideDown 0.3s ease;
   }
-  
   .details-area.show { display: flex; }
 
   @keyframes slideDown {
@@ -239,10 +260,7 @@
     transition: transform 0.2s, opacity 0.2s;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
-  .action-btn:hover {
-    transform: translateY(-2px);
-    opacity: 0.9;
-  }
+  .action-btn:hover { transform: translateY(-2px); opacity: 0.9; }
   .btn-form { background: #4A90E2; color: #fff; border: none; }
   .btn-line { background: #06c755; color: #fff; border: none; }
 
@@ -274,7 +292,6 @@
     font-weight: bold; 
     transition: opacity 0.2s;
   }
-  
   button:hover { opacity: 0.9; }
 
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -289,20 +306,10 @@
   </div>
   
   <div class="chat-area" id="chat">
-    <div class="msg-row bot">
-      <img src="https://image.rakuten.co.jp/alpacapc/cabinet/item_new/06703877/imgrc0111028335.jpg" class="icon">
-      <div style="display:flex; flex-direction:column; gap:5px; max-width: 80%;">
-        <div class="bubble">
-          こんにちは！<b>アルパカPCの「アルパカくん」</b>です！<br>
-          パソコンのことでお困りのことはありますか？下から選ぶか、自由に質問してくださいね。
-        </div>
-        <div class="suggestions">
-          <div class="chip" onclick="sendText(this.innerText)">電源が入らない</div>
-          <div class="chip" onclick="sendText(this.innerText)">パスワード画面から進まない</div>
-          <div class="chip" onclick="sendText(this.innerText)">Wi-Fiが繋がらない</div>
-        </div>
-      </div>
     </div>
+
+  <div class="reset-area">
+    <button class="reset-btn" onclick="resetChat()">🔄 最初からやり直す</button>
   </div>
 
   <div class="input-area">
@@ -322,26 +329,67 @@ const URL_FORM = "https://www.alpaca-pc.com/ssl/contact/";
 const URL_LINE = "https://page.line.me/544rnszi?oat_content=url&openQrModal=true";
 const SHOP_PHONE = "048-577-7990";
 
+// ページ読み込み時に初期化
+window.onload = initChat;
+
+// ★初期状態を表示する関数★
+function initChat() {
+  chat.innerHTML = ''; // 画面クリア
+  
+  const initialMsg = `
+    こんにちは！<b>アルパカPCの「アルパカくん」</b>です！<br>
+    パソコンのことでお困りのことはありますか？下から選ぶか、自由に質問してくださいね。
+    <div class="suggestions">
+      <div class="chip" onclick="sendText(this.innerText)">電源が入らない</div>
+      <div class="chip" onclick="sendText(this.innerText)">パスワード画面から進まない</div>
+      <div class="chip" onclick="sendText(this.innerText)">Wi-Fiが繋がらない</div>
+    </div>
+  `;
+  
+  // Botの吹き出しとして追加
+  addMsgInner(initialMsg, 'bot', false); // false=タグ変換しない（HTMLそのまま使うため）
+}
+
+// ★リセット機能★
+function resetChat() {
+  if(!confirm("会話の履歴を消去して、最初からやり直しますか？")) return;
+  history = []; // 記憶を消去
+  initChat();   // 画面を初期化
+}
+
 // テキスト送信用の共通関数
 function sendText(text) {
   input.value = text;
   sendMessage();
 }
 
-// Markdownの太字だけ変換
+// ★修正版：Markdown変換＆記号対策★
 function parseMarkdown(text) {
   if (!text) return "";
-  return text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+  
+  // 1. < や > などの特殊文字を無害化（これで文章が消えるのを防ぎます）
+  let html = text.replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+
+  // 2. **太字** を <b>太字</b> に戻す
+  html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+  
+  // 3. 改行を <br> に
+  html = html.replace(/\n/g, '<br>');
+
+  return html;
 }
 
-// ★重要：AIの回答から選択肢タグを抜き出して、本文とリストに分ける関数
+// 選択肢タグ [CHOICES:A,B] の解析
 function parseOptions(text) {
-  // 正規表現で [CHOICES:A,B,C] を探す
   const match = text.match(/\[CHOICES:(.*?)\]/);
   if (match) {
-    const optionsStr = match[1]; // "ノート,デスクトップ" の部分
-    const cleanText = text.replace(match[0], ''); // タグを消した本文
-    const options = optionsStr.split(',').map(s => s.trim()); // 配列にする
+    const optionsStr = match[1]; 
+    const cleanText = text.replace(match[0], ''); 
+    const options = optionsStr.split(',').map(s => s.trim());
     return { text: cleanText, options: options };
   }
   return { text: text, options: [] };
@@ -376,15 +424,20 @@ async function sendMessage() {
   }
 }
 
+// メッセージ追加のラッパー関数
 function addMsg(rawText, role) {
+  // 通常のメッセージ追加（タグ変換あり）
+  addMsgInner(rawText, role, true);
+}
+
+// 内部描画ロジック
+function addMsgInner(content, role, shouldParse) {
   const row = document.createElement('div');
   row.className = `msg-row ${role}`;
   
   if (role === 'bot') {
     // 過去のボタン削除
     document.querySelectorAll('.support-container').forEach(e => e.remove());
-    // 過去の選択肢ボタンも削除（もし残すならこの行は消してOK）
-    // document.querySelectorAll('.choice-container').forEach(e => e.remove());
 
     const img = document.createElement('img');
     img.src = ALPACA_ICON;
@@ -394,34 +447,39 @@ function addMsg(rawText, role) {
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.gap = '5px';
-    container.style.maxWidth = '80%'; // 幅制限
+    container.style.maxWidth = '85%'; 
 
-    // ★ここで選択肢タグの解析を行う
-    const parsed = parseOptions(rawText);
-    const formattedText = parseMarkdown(parsed.text); // 本文のみ太字変換
+    let bubbleContent = content;
+    let options = [];
+
+    // 通常のBot発言なら、Markdown解析と選択肢抽出を行う
+    if (shouldParse) {
+      const parsed = parseOptions(content);
+      bubbleContent = parseMarkdown(parsed.text);
+      options = parsed.options;
+    }
 
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    bubble.style.maxWidth = '100%'; // コンテナに合わせる
-    bubble.innerHTML = formattedText;
+    bubble.style.maxWidth = '100%';
+    bubble.innerHTML = bubbleContent;
     container.appendChild(bubble);
 
-    // ★選択肢がある場合、ボタンを表示する
-    if (parsed.options.length > 0) {
+    // 選択肢ボタン表示
+    if (options.length > 0) {
       const choiceContainer = document.createElement('div');
       choiceContainer.className = 'choice-container';
-      
-      parsed.options.forEach(opt => {
+      options.forEach(opt => {
         const choiceBtn = document.createElement('button');
         choiceBtn.className = 'choice-btn';
         choiceBtn.innerText = opt;
-        choiceBtn.onclick = () => sendText(opt); // ボタンを押すとその文字を送信
+        choiceBtn.onclick = () => sendText(opt);
         choiceContainer.appendChild(choiceBtn);
       });
       container.appendChild(choiceContainer);
     }
 
-    // 担当者問い合わせエリア（毎回表示）
+    // 担当者問い合わせエリア
     const supportContainer = document.createElement('div');
     supportContainer.className = 'support-container';
 
@@ -468,7 +526,8 @@ function addMsg(rawText, role) {
     // ユーザー
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    bubble.innerHTML = parseMarkdown(rawText); 
+    // ユーザー入力も記号対策を通して表示
+    bubble.innerHTML = parseMarkdown(content); 
     row.appendChild(bubble);
   }
 

@@ -103,7 +103,7 @@
   .support-container {
     margin-top: 8px;
     width: 100%;
-    max-width: 320px;
+    max-width: 350px;
   }
 
   /* 開閉ボタン */
@@ -350,7 +350,7 @@ function addMsg(text, role) {
     // 1. 開閉ボタン
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'toggle-btn';
-    toggleBtn.innerHTML = '💁‍♀️ 解決しないので担当者に問い合わせる';
+    toggleBtn.innerHTML = '💁‍♀️ 担当者に相談する(電話/フォーム/LINE)';
     
     // 2. 詳細エリア（初期は隠れている）
     const details = document.createElement('div');
@@ -361,15 +361,14 @@ function addMsg(text, role) {
         <span class="phone-hours">電話受付時間：平日10時～17時(土日祝除く)</span>
         
         <div class="alert-box">
-          <b>⚠️ 電話は混み合い、繋がりにくい場合がございます。</b><br>
           <span style="color:#333; display:block; margin-top:5px;">
-            フォームまたはLINEなら<b>1営業日以内</b>に返信いたします。
+            電話の回線が少ない為、なかなか繋がらない場合もございます。お問い合わせフォームまたはLINEでお問い合わせいただければ<b>1営業日以内</b>にご返信いたします。
           </span>
         </div>
       </div>
 
       <a href="${URL_FORM}" target="_blank" class="action-btn btn-form">
-        ✉️ お問い合わせフォーム
+        ✉️ お問合せフォーム
       </a>
 
       <a href="${URL_LINE}" target="_blank" class="action-btn btn-line">

@@ -91,7 +91,7 @@
     background: #f0f0f0;
     color: #333;
     border-top-left-radius: 4px;
-    max-width: 100%; /* コンテナ幅に合わせる */
+    max-width: 100%; 
   }
 
   .user .bubble {
@@ -100,7 +100,7 @@
     border-top-right-radius: 4px;
   }
 
-  /* ▼▼▼ リセットエリア（新機能） ▼▼▼ */
+  /* ▼▼▼ リセットエリア ▼▼▼ */
   .reset-area {
     background: #f9f9f9;
     padding: 6px;
@@ -109,7 +109,7 @@
   }
   
   .reset-btn {
-    background: none;
+    background: #fff;
     border: 1px solid #ddd;
     border-radius: 20px;
     color: #666;
@@ -120,16 +120,15 @@
     align-items: center;
     gap: 5px;
     transition: all 0.2s;
-    background: #fff;
   }
   
   .reset-btn:hover {
     color: #4A90E2;
     border-color: #4A90E2;
   }
-  /* ▲▲▲ ▲▲▲ */
 
-  /* 選択肢ボタン */
+  /* ▼▼▼ 選択肢ボタン（共通デザイン） ▼▼▼ */
+  /* ここを最初のメニューにも適用します */
   .choice-container {
     display: flex;
     flex-wrap: wrap;
@@ -148,31 +147,16 @@
     cursor: pointer;
     transition: all 0.2s;
     font-weight: bold;
+    /* ボタンっぽさを強調 */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
 
   .choice-btn:hover {
     background: #4A90E2;
     color: #fff;
+    transform: translateY(-1px);
   }
-
-  /* 初回チップ */
-  .suggestions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-    max-width: 100%;
-  }
-  .chip {
-    background: #eaf4ff;
-    color: #4A90E2;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 0.9em;
-    cursor: pointer;
-    border: none;
-  }
-  .chip:hover { background: #d0e7ff; }
+  /* ▲▲▲ ▲▲▲ */
 
   /* 問い合わせ詳細エリア */
   .support-container {
@@ -332,8 +316,7 @@ const SHOP_PHONE = "048-577-7990";
 // ページ読み込み時に初期化
 window.onload = initChat;
 
-// ★修正点1：初期表示のデザイン崩れを修正★
-// 吹き出しの外にボタンを配置するように手動で作ります
+// ★初期メニュー（デザイン統一版）★
 function initChat() {
   chat.innerHTML = ''; 
   
@@ -350,19 +333,24 @@ function initChat() {
   container.style.gap = '5px';
   container.style.maxWidth = '85%';
 
-  // 1. 挨拶の吹き出し
+  // 1. 挨拶
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
-  bubble.innerHTML = 'こんにちは！<b>アルパカPCの「アルパカくん」</b>です！<br>パソコンのことでお困りのことはありますか？下から選ぶか、自由に質問してくださいね。';
+  bubble.innerHTML = 'こんにちは！<b>アルパカPCの「アルパカくん」</b>です！<br>パソコンのことでお困りのことはありますか？メニューから選ぶか、自由に質問してくださいね。';
   container.appendChild(bubble);
 
-  // 2. 質問チップ（吹き出しの外に追加！）
+  // 2. メインメニュー（5つの大項目）
+  // ★ここを「choice-btn」クラスに変更しました！
   const suggestions = document.createElement('div');
-  suggestions.className = 'suggestions';
+  suggestions.className = 'choice-container';
+  suggestions.style.marginTop = '10px'; // 少し間隔をあける
+
   suggestions.innerHTML = `
-    <div class="chip" onclick="sendText(this.innerText)">電源が入らない</div>
-    <div class="chip" onclick="sendText(this.innerText)">パスワード画面から進まない</div>
-    <div class="chip" onclick="sendText(this.innerText)">Wi-Fiが繋がらない</div>
+    <button class="choice-btn" onclick="sendText(this.innerText)">商品について</button>
+    <button class="choice-btn" onclick="sendText(this.innerText)">返品・交換・キャンセルについて</button>
+    <button class="choice-btn" onclick="sendText(this.innerText)">お支払い・配送について</button>
+    <button class="choice-btn" onclick="sendText(this.innerText)">ご注文について</button>
+    <button class="choice-btn" onclick="sendText(this.innerText)">パソコンのトラブルについて</button>
   `;
   container.appendChild(suggestions);
 
@@ -383,27 +371,24 @@ function sendText(text) {
   sendMessage();
 }
 
-// ★修正点2：タグが表示されちゃう問題を修正★
+// ★修正済：タグ表示バグ対策★
 function parseMarkdown(text) {
   if (!text) return "";
   
-  // 1. まず全ての記号を無害化（これで < が来ても消えなくなります）
+  // 1. 記号を無害化
   let html = text.replace(/&/g, "&amp;")
                  .replace(/</g, "&lt;")
                  .replace(/>/g, "&gt;")
                  .replace(/"/g, "&quot;")
                  .replace(/'/g, "&#039;");
 
-  // 2. ★ここが新機能★ 
-  // 無害化した中から、<b> と <br> だけは「タグ」として復活させる！
+  // 2. 必要なタグだけ復活
   html = html.replace(/&lt;b&gt;/g, '<b>');
   html = html.replace(/&lt;\/b&gt;/g, '</b>');
   html = html.replace(/&lt;br&gt;/g, '<br>');
 
-  // 3. Markdownの太字(**)もHTMLに変換
+  // 3. Markdown変換
   html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-  
-  // 4. 改行コード(\n)も<br>に
   html = html.replace(/\n/g, '<br>');
 
   return html;
@@ -475,7 +460,6 @@ function addMsgInner(content, role, shouldParse) {
 
     if (shouldParse) {
       const parsed = parseOptions(content);
-      // ここで修正済みの変換関数を通します
       bubbleContent = parseMarkdown(parsed.text);
       options = parsed.options;
     }
@@ -519,7 +503,7 @@ function addMsgInner(content, role, shouldParse) {
           </span>
         </div>
       </div>
-      <a href="${URL_FORM}" target="_blank" class="action-btn btn-form"✉️ お問合せフォーム</a>
+      <a href="${URL_FORM}" target="_blank" class="action-btn btn-form"✉️ お問い合わせフォーム</a>
       <a href="${URL_LINE}" target="_blank" class="action-btn btn-line">💬 LINEでお問い合わせ</a>
     `;
 

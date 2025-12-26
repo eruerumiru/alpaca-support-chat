@@ -99,14 +99,43 @@
     border-top-right-radius: 4px;
   }
 
-  /* ▼▼▼ デザイン調整エリア（開閉式） ▼▼▼ */
+  /* ▼▼▼ 質問候補（チップ）のデザイン ▼▼▼ */
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    max-width: 100%;
+  }
+
+  .chip {
+    background: #fff;
+    border: 1px solid #4A90E2;
+    color: #4A90E2;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chip:hover {
+    background: #4A90E2;
+    color: #fff;
+  }
+  /* ▲▲▲ ▲▲▲ */
+
+  /* 問い合わせ詳細エリア（開閉式） */
   .support-container {
     margin-top: 8px;
     width: 100%;
-    max-width: 350px;
+    max-width: 320px;
   }
 
-  /* 開閉ボタン */
   .toggle-btn {
     background: #fff;
     border: 1px solid #ddd;
@@ -134,26 +163,21 @@
     color: #999;
   }
 
-  /* 詳細エリア（初期は非表示） */
   .details-area {
-    display: none; /* ここで隠す */
+    display: none;
     margin-top: 10px;
     flex-direction: column;
     gap: 12px;
     animation: slideDown 0.3s ease;
   }
   
-  /* 表示用のクラス */
-  .details-area.show {
-    display: flex;
-  }
+  .details-area.show { display: flex; }
 
   @keyframes slideDown {
     from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* 電話情報のエリア */
   .phone-section {
     background: #fff;
     border: 1px solid #eee;
@@ -176,7 +200,6 @@
     margin-bottom: 10px;
   }
   
-  /* 注意書きボックス */
   .alert-box {
     background: #fff4f4;
     border: 1px solid #ffcccc;
@@ -188,7 +211,6 @@
     line-height: 1.5;
   }
 
-  /* ボタン共通 */
   .action-btn {
     display: block;
     padding: 12px;
@@ -204,21 +226,8 @@
     transform: translateY(-2px);
     opacity: 0.9;
   }
-
-  /* お問い合わせフォームボタン（青） */
-  .btn-form {
-    background: #4A90E2;
-    color: #fff;
-    border: none;
-  }
-
-  /* LINEボタン（公式グリーン） */
-  .btn-line {
-    background: #06c755; 
-    color: #fff;
-    border: none;
-  }
-  /* ▲▲▲ 調整終了 ▲▲▲ */
+  .btn-form { background: #4A90E2; color: #fff; border: none; }
+  .btn-line { background: #06c755; color: #fff; border: none; }
 
   /* 入力エリア */
   .input-area { 
@@ -265,9 +274,16 @@
   <div class="chat-area" id="chat">
     <div class="msg-row bot">
       <img src="https://image.rakuten.co.jp/alpacapc/cabinet/item_new/06703877/imgrc0111028335.jpg" class="icon">
-      <div class="bubble">
-        こんにちは！<b>アルパカPCの「アルパカくん」</b>です！<br>
-        パソコンのことでお困りのことや、聞きたいことがあったら何でもボクに聞いてくださいね。
+      <div style="display:flex; flex-direction:column; gap:5px; max-width: 80%;">
+        <div class="bubble">
+          こんにちは！<b>アルパカPCの「アルパカくん」</b>です！<br>
+          パソコンのことでお困りのことはありますか？下から選ぶか、自由に質問してくださいね。
+        </div>
+        <div class="suggestions">
+          <div class="chip" onclick="sendChip(this)">電源が入らない</div>
+          <div class="chip" onclick="sendChip(this)">パスワードを設定していないのにパスワード画面が出る</div>
+          <div class="chip" onclick="sendChip(this)">Wi-Fiが繋がらない</div>
+        </div>
       </div>
     </div>
   </div>
@@ -290,6 +306,13 @@ const URL_FORM = "https://www.alpaca-pc.com/ssl/contact/";
 const URL_LINE = "https://page.line.me/544rnszi?oat_content=url&openQrModal=true";
 const SHOP_PHONE = "048-577-7990";
 
+// チップがクリックされた時の処理
+function sendChip(element) {
+  const text = element.innerText;
+  input.value = text; // 入力欄にセットして
+  sendMessage();      // 送信！
+}
+
 async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
@@ -299,6 +322,8 @@ async function sendMessage() {
   input.disabled = true;
 
   try {
+    // サーバー側のモデル指定はここではなく、サーバーコード(Python/Node.js等)で行ってください
+    // 今回は 'gemini-2.5-flash-lite' を使う想定です
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -324,10 +349,9 @@ function addMsg(text, role) {
   row.className = `msg-row ${role}`;
   
   if (role === 'bot') {
-    // ★ここを追加！：ボットが喋る前に、過去の問い合わせボタンを全部消す
+    // 過去の問い合わせボタンを消す（スッキリさせるため）
     const existingButtons = document.querySelectorAll('.support-container');
     existingButtons.forEach(btn => btn.remove());
-    // ----------------------------------------------------
 
     const img = document.createElement('img');
     img.src = ALPACA_ICON;
@@ -347,12 +371,10 @@ function addMsg(text, role) {
     const supportContainer = document.createElement('div');
     supportContainer.className = 'support-container';
 
-    // 1. 開閉ボタン
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'toggle-btn';
-    toggleBtn.innerHTML = '💁‍♀️ 担当者に相談する(電話/フォーム/LINE)';
+    toggleBtn.innerHTML = '💁‍♀️ 解決しないので担当者に問い合わせる';
     
-    // 2. 詳細エリア（初期は隠れている）
     const details = document.createElement('div');
     details.className = 'details-area';
     details.innerHTML = `
@@ -361,6 +383,7 @@ function addMsg(text, role) {
         <span class="phone-hours">電話受付時間：平日10時～17時(土日祝除く)</span>
         
         <div class="alert-box">
+
           <span style="color:#333; display:block; margin-top:5px;">
             電話の回線が少ない為、なかなか繋がらない場合もございます。お問い合わせフォームまたはLINEでお問い合わせいただければ<b>1営業日以内</b>にご返信いたします。
           </span>
@@ -376,13 +399,12 @@ function addMsg(text, role) {
       </a>
     `;
 
-    // 3. クリックイベント（開閉処理）
     toggleBtn.onclick = () => {
       details.classList.toggle('show');
       if(details.classList.contains('show')) {
         toggleBtn.innerHTML = '✖ 閉じる';
       } else {
-        toggleBtn.innerHTML = '💁‍♀️ 解決しないので担当者に問い合わせる';
+        toggleBtn.innerHTML = '💁‍♀️ 担当者に相談する(電話/フォーム/LINE)';
       }
     };
 

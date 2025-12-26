@@ -100,7 +100,23 @@
     border-top-right-radius: 4px;
   }
 
-  /* ▼▼▼ リセットエリア ▼▼▼ */
+  /* ▼▼▼ 続きを見るリンクのデザイン ▼▼▼ */
+  .more-link {
+    font-size: 0.75em;
+    color: #999;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 4px;
+    display: inline-block;
+    padding: 2px 5px;
+    transition: color 0.2s;
+  }
+  .more-link:hover {
+    color: #4A90E2;
+  }
+  /* ▲▲▲ ▲▲▲ */
+
+  /* リセットエリア */
   .reset-area {
     background: #f9f9f9;
     padding: 6px;
@@ -127,8 +143,7 @@
     border-color: #4A90E2;
   }
 
-  /* ▼▼▼ 選択肢ボタン（共通デザイン） ▼▼▼ */
-  /* ここを最初のメニューにも適用します */
+  /* 選択肢ボタン */
   .choice-container {
     display: flex;
     flex-wrap: wrap;
@@ -147,7 +162,6 @@
     cursor: pointer;
     transition: all 0.2s;
     font-weight: bold;
-    /* ボタンっぽさを強調 */
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
 
@@ -156,7 +170,6 @@
     color: #fff;
     transform: translateY(-1px);
   }
-  /* ▲▲▲ ▲▲▲ */
 
   /* 問い合わせ詳細エリア */
   .support-container {
@@ -316,7 +329,7 @@ const SHOP_PHONE = "048-577-7990";
 // ページ読み込み時に初期化
 window.onload = initChat;
 
-// ★初期メニュー（デザイン統一版）★
+// 初期メニュー
 function initChat() {
   chat.innerHTML = ''; 
   
@@ -340,10 +353,9 @@ function initChat() {
   container.appendChild(bubble);
 
   // 2. メインメニュー（5つの大項目）
-  // ★ここを「choice-btn」クラスに変更しました！
   const suggestions = document.createElement('div');
   suggestions.className = 'choice-container';
-  suggestions.style.marginTop = '10px'; // 少し間隔をあける
+  suggestions.style.marginTop = '10px';
 
   suggestions.innerHTML = `
     <button class="choice-btn" onclick="sendText(this.innerText)">商品について</button>
@@ -371,23 +383,49 @@ function sendText(text) {
   sendMessage();
 }
 
-// ★修正済：タグ表示バグ対策★
+// ★「続きを教えて」と裏で送信する機能★
+async function askMore() {
+  const hiddenText = "前の文章が途中で切れています。続きから書いてください。";
+  
+  // ユーザーの画面には出さず、ローディングだけ見せる（あるいは何も見せずBotの返信を待つ）
+  // ここではBotの思考中感だけ出すため、入力ロックなどはsendMessageと同じ処理をします
+  input.disabled = true;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: hiddenText, history: history })
+    });
+    const data = await res.json();
+    
+    // Botの返信として表示（続きの文章）
+    addMsg(data.reply, 'bot');
+    
+    // 履歴には残す（文脈をつなぐため）
+    history.push({ role: 'user', content: hiddenText });
+    history.push({ role: 'assistant', content: data.reply });
+
+  } catch (e) {
+    alert("エラーが発生しました。もう一度お試しください。");
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+// タグ表示バグ対策
 function parseMarkdown(text) {
   if (!text) return "";
-  
-  // 1. 記号を無害化
   let html = text.replace(/&/g, "&amp;")
                  .replace(/</g, "&lt;")
                  .replace(/>/g, "&gt;")
                  .replace(/"/g, "&quot;")
                  .replace(/'/g, "&#039;");
-
-  // 2. 必要なタグだけ復活
+  
   html = html.replace(/&lt;b&gt;/g, '<b>');
   html = html.replace(/&lt;\/b&gt;/g, '</b>');
   html = html.replace(/&lt;br&gt;/g, '<br>');
-
-  // 3. Markdown変換
   html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
   html = html.replace(/\n/g, '<br>');
 
@@ -470,6 +508,13 @@ function addMsgInner(content, role, shouldParse) {
     bubble.innerHTML = bubbleContent;
     container.appendChild(bubble);
 
+    // ★ここに「続きを見る」リンクを追加★
+    const moreLink = document.createElement('div');
+    moreLink.innerHTML = '<span class="more-link" onclick="askMore()">※文章が途切れている場合はこちら</span>';
+    // 吹き出しの直下に追加
+    container.appendChild(moreLink);
+
+    // 選択肢ボタン
     if (options.length > 0) {
       const choiceContainer = document.createElement('div');
       choiceContainer.className = 'choice-container';

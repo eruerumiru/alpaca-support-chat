@@ -313,14 +313,13 @@ function sendChip(element) {
   sendMessage();      
 }
 
-// ★ MarkdownをHTMLに変換する魔法の関数 ★
+// ★ MarkdownをHTMLに変換する関数（改行変換はOFF、太字のみON） ★
 function parseMarkdown(text) {
   if (!text) return "";
   let html = text;
   // 1. **太字** を <b>太字</b> に変換
   html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-  // 2. 改行コード(\n) を <br> に変換
-  html = html.replace(/\n/g, '<br>');
+  // 2. 改行コードの変換は削除しました
   return html;
 }
 
@@ -358,11 +357,11 @@ function addMsg(rawText, role) {
   const row = document.createElement('div');
   row.className = `msg-row ${role}`;
   
-  // HTMLタグに変換（ユーザーの入力はそのまま、Botの入力だけ変換してもOKですが、両方通しても安全です）
+  // HTMLタグに変換（太字のみ）
   const formattedText = parseMarkdown(rawText);
 
   if (role === 'bot') {
-    // ★重要：過去の「問い合わせボタン」を画面からすべて消す
+    // 過去の問い合わせボタンを消す
     const existingButtons = document.querySelectorAll('.support-container');
     existingButtons.forEach(btn => btn.remove());
 
@@ -387,25 +386,26 @@ function addMsg(rawText, role) {
 
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'toggle-btn';
-    toggleBtn.innerHTML = '💁‍♀️ 解決しないので担当者に問い合わせる';
+    // ★ボタン文言の変更★
+    toggleBtn.innerHTML = '担当者に相談する(電話/フォーム/LINE)';
     
     const details = document.createElement('div');
     details.className = 'details-area';
+    // ★注意書き文言の変更★
     details.innerHTML = `
       <div class="phone-section">
         <a href="tel:${SHOP_PHONE}" class="phone-number">📞 ${SHOP_PHONE}</a>
         <span class="phone-hours">電話受付時間：平日10時～17時(土日祝除く)</span>
         
         <div class="alert-box">
-          <b>⚠️ 電話は混み合い、繋がりにくい場合がございます。</b><br>
-          <span style="color:#333; display:block; margin-top:5px;">
-            フォームまたはLINEなら<b>1営業日以内</b>に返信いたします。
+          <span style="color:#333; display:block;">
+            電話の回線が少ない為、なかなか繋がらない場合もございます。お問い合わせフォームまたはLINEでお問い合わせいただければ<b>1営業日以内</b>にご返信いたします。
           </span>
         </div>
       </div>
 
       <a href="${URL_FORM}" target="_blank" class="action-btn btn-form">
-        ✉️ お問い合わせフォーム
+       ✉️ お問い合わせフォーム
       </a>
 
       <a href="${URL_LINE}" target="_blank" class="action-btn btn-line">
@@ -418,7 +418,7 @@ function addMsg(rawText, role) {
       if(details.classList.contains('show')) {
         toggleBtn.innerHTML = '✖ 閉じる';
       } else {
-        toggleBtn.innerHTML = '💁‍♀️ 解決しないので担当者に問い合わせる';
+        toggleBtn.innerHTML = '担当者に相談する(電話/フォーム/LINE)';
       }
     };
 
@@ -433,7 +433,7 @@ function addMsg(rawText, role) {
     // ユーザー側のメッセージ
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    bubble.innerHTML = formattedText; // ユーザー入力も改行など反映
+    bubble.innerHTML = formattedText; 
     row.appendChild(bubble);
   }
 
